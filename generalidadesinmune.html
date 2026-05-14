@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ Simulador Interactivo del Sistema Inmune</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #c8102e 0%, #a00d25 100%);
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-bottom: 3px solid #ffeb3b;
+        }
+
+        h1 {
+            font-size: 1.6em;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+
+        #game-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 12px;
+            padding: 12px;
+            max-width: 1900px;
+            margin: 0 auto;
+            min-height: calc(100vh - 90px);
+        }
+
+        .panel {
+            background: rgba(30, 30, 40, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            border: 2px solid #444;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        #glosario, #controls {
+            overflow-y: auto;
+            max-height: calc(100vh - 115px);
+        }
+
+        #glosario::-webkit-scrollbar,
+        #controls::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #glosario::-webkit-scrollbar-track,
+        #controls::-webkit-scrollbar-track {
+            background: #2d2d2d;
+            border-radius: 10px;
+        }
+
+        #glosario::-webkit-scrollbar-thumb,
+        #controls::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #c8102e, #ff6b9d);
+            border-radius: 10px;
+        }
+
+        #visualizador {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .view-container {
+            flex: 1;
+            min-height: 500px;
+        }
+
+        .vista {
+            border: 3px solid #555;
+            border-radius: 10px;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .label {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.3), rgba(200, 16, 46, 0.3));
+            padding: 5px 10px;
+            font-size: 0.75em;
+            color: #00f2ff;
+            border-radius: 6px;
+            font-weight: bold;
+            z-index: 10;
+            border: 1px solid #00f2ff;
+        }
+
+        .paso-indicator {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: linear-gradient(135deg, rgba(255, 235, 59, 0.3), rgba(200, 16, 46, 0.3));
+            padding: 8px 15px;
+            font-size: 0.85em;
+            color: #ffeb3b;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 10;
+            border: 2px solid #ffeb3b;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .info-overlay {
+            padding: 12px;
+            background: linear-gradient(135deg, #2d2d3d 0%, #1d1d2d 100%);
+            border-top: 2px solid #c8102e;
+            border-radius: 0 0 10px 10px;
+        }
+
+        #status-text {
+            font-size: 0.85em;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.12), rgba(200, 16, 46, 0.12));
+            border: 2px solid #00f2ff;
+            border-radius: 6px;
+            padding: 6px 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+
+        .stat-label {
+            font-size: 0.65em;
+            color: #00f2ff;
+            margin-top: 2px;
+        }
+
+        .mecanismo-panel {
+            background: linear-gradient(135deg, #2d2d3d 0%, #1d1d2d 100%);
+            border: 2px solid #c8102e;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .mecanismo-panel::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .mecanismo-panel::-webkit-scrollbar-thumb {
+            background: #c8102e;
+            border-radius: 10px;
+        }
+
+        .mecanismo-title {
+            color: #ffeb3b;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .paso {
+            background: rgba(0, 242, 255, 0.08);
+            border-left: 3px solid #00f2ff;
+            padding: 8px 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 0.75em;
+            line-height: 1.3;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .paso:hover {
+            background: rgba(0, 242, 255, 0.18);
+            transform: translateX(5px);
+            border-left-color: #ffeb3b;
+        }
+
+        .paso.active {
+            background: linear-gradient(90deg, rgba(255, 235, 59, 0.25), rgba(200, 16, 46, 0.15));
+            border-left-color: #ffeb3b;
+            border-left-width: 5px;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.3);
+        }
+
+        .paso-numero {
+            background: linear-gradient(135deg, #c8102e, #ff6b9d);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.75em;
+            flex-shrink: 0;
+        }
+
+        .paso.active .paso-numero {
+            background: linear-gradient(135deg, #ffeb3b, #fbbf24);
+            color: #000;
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+        }
+
+        h3 {
+            color: #00f2ff;
+            font-size: 1em;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #c8102e;
+        }
+
+        .control-section {
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            color: #00f2ff;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #c8102e;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-level {
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #3a3a4a 0%, #2a2a3a 100%);
+            border: 2px solid #555;
+            color: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.8em;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-level:hover {
+            background: linear-gradient(135deg, #4a4a5a 0%, #3a3a4a 100%);
+            border-color: #00f2ff;
+            transform: translateX(2px);
+        }
+
+        .active-btn {
+            background: linear-gradient(135deg, #c8102e 0%, #a00d25 100%) !important;
+            border-color: #ffeb3b !important;
+        }
+
+        .emoji-icon {
+            font-size: 1em;
+            flex-shrink: 0;
+        }
+
+        .concept {
+            margin-bottom: 8px;
+            border-left: 3px solid #c8102e;
+            padding: 8px;
+            background: linear-gradient(90deg, rgba(200, 16, 46, 0.12), transparent);
+            border-radius: 4px;
+            font-size: 0.8em;
+            line-height: 1.4;
+        }
+
+        .concept strong {
+            color: #ffeb3b;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .caracteristica-card {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.15), rgba(167, 139, 250, 0.15));
+            border: 2px solid #4ecdc4;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .caracteristica-title {
+            color: #4ecdc4;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(78, 205, 196, 0.3);
+        }
+
+        .caracteristica {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 5px 6px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-size: 0.75em;
+            line-height: 1.3;
+        }
+
+        .caracteristica strong {
+            color: #ffeb3b;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #c8102e, transparent);
+            margin: 8px 0;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 8px;
+            background: linear-gradient(135deg, #4ecdc4, #44a89d);
+            border: 2px solid #00f2ff;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.75em;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        @media (max-width: 1400px) {
+            #game-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .view-container {
+                min-height: 400px;
+            }
+            
+            #glosario, #controls {
+                max-height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.3em;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .transition-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 235, 59, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.7em;
+            color: #ffeb3b;
+            border: 1px solid #ffeb3b;
+            z-index: 10;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🛡️ Simulador Interactivo del Sistema Inmune</h1>
+    <p class="subtitle">Haz clic en cada paso para ver la animación detallada</p>
+</header>
+
+<div id="game-container">
+    <!-- Panel izquierdo: Glosario -->
+    <div id="glosario" class="panel">
+        <h3>📖 Glosario</h3>
+        <div id="concept-content">
+            <p style="opacity: 0.7; text-align: center; padding: 30px 10px; font-size: 0.85em;">
+                Selecciona un nivel y haz clic en cada paso del mecanismo
+            </p>
+        </div>
+    </div>
+
+    <!-- Panel central: Visualizador -->
+    <div id="visualizador" class="panel">
+        <div class="view-container">
+            <div class="vista">
+                <span class="label">🔬 VISUALIZACIÓN INTERACTIVA</span>
+                <div id="paso-indicator" class="paso-indicator">Selecciona un paso</div>
+                <canvas id="canvas-main" width="800" height="600"></canvas>
+                <div id="transition-indicator" class="transition-indicator" style="display: none;">
+                    Transición en progreso...
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-overlay">
+            <div id="status-text">
+                <strong style="color: #00f2ff;">👋 Bienvenido</strong><br>
+                Selecciona un tipo celular y haz clic en cada paso para ver su animación
+            </div>
+            
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="stat-paso">0/0</div>
+                    <div class="stat-label">Paso Actual</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="stat-nivel">-</div>
+                    <div class="stat-label">Nivel</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="stat-defensa">0%</div>
+                    <div class="stat-label">Defensa</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="stat-tiempo">-</div>
+                    <div class="stat-label">Tiempo</div>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="control-btn" onclick="anteriorPaso()">⬅️ Anterior</button>
+                <button class="control-btn" onclick="reproducirSecuencia()">▶️ Reproducir Todo</button>
+                <button class="control-btn" onclick="siguientePaso()">Siguiente ➡️</button>
+            </div>
+
+            <div id="mecanismo-container"></div>
+        </div>
+    </div>
+
+    <!-- Panel derecho: Controles -->
+    <div id="controls" class="panel">
+        <div class="control-section">
+            <div class="section-title">🧬 Linaje Mieloide</div>
+            <button class="btn-level" onclick="updateView('neutrofilos')">
+                <span class="emoji-icon">🔴</span>
+                <span>Neutrófilos</span>
+            </button>
+            <button class="btn-level" onclick="updateView('eosinofilos')">
+                <span class="emoji-icon">🟠</span>
+                <span>Eosinófilos</span>
+            </button>
+            <button class="btn-level" onclick="updateView('basofilos')">
+                <span class="emoji-icon">🔵</span>
+                <span>Basófilos</span>
+            </button>
+        </div>
+        
+        <div class="divider"></div>
+
+        <div class="control-section">
+            <div class="section-title">🎯 Presentadoras</div>
+            <button class="btn-level" onclick="updateView('monocitos')">
+                <span class="emoji-icon">🟢</span>
+                <span>Monocitos</span>
+            </button>
+            <button class="btn-level" onclick="updateView('macrofagos')">
+                <span class="emoji-icon">🟣</span>
+                <span>Macrófagos</span>
+            </button>
+            <button class="btn-level" onclick="updateView('dendriticas')">
+                <span class="emoji-icon">⭐</span>
+                <span>Dendríticas</span>
+            </button>
+        </div>
+        
+        <div class="divider"></div>
+
+        <div class="control-section">
+            <div class="section-title">⚡ Respuesta</div>
+            <button class="btn-level" onclick="updateView('fagocitosis')">
+                <span class="emoji-icon">🎯</span>
+                <span>Fagocitosis</span>
+            </button>
+            <button class="btn-level" onclick="updateView('complemento')">
+                <span class="emoji-icon">🧩</span>
+                <span>Complemento</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas-main');
+const ctx = canvas.getContext('2d');
+
+let currentLevel = null;
+let currentPaso = 0;
+let isAnimating = false;
+let animationFrame = 0;
+let particulas = [];
+let elementos = [];
+
+const data = {
+    neutrofilos: {
+        title: "Neutrófilos - Mecanismo de Acción",
+        defensa: 90,
+        tiempo: "6-24h",
+        mecanismo: {
+            titulo: "⚙️ Mecanismo Paso a Paso",
+            pasos: [
+                {
+                    nombre: "Quimiotaxis",
+                    desc: "Detección de señales IL-8, C5a, LTB4",
+                    visual: "quimiotaxis"
+                },
+                {
+                    nombre: "Adhesión",
+                    desc: "Selectinas e integrinas en endotelio",
+                    visual: "adhesion"
+                },
+                {
+                    nombre: "Diapédesis",
+                    desc: "Migración trans-endotelial",
+                    visual: "diapedesis"
+                },
+                {
+                    nombre: "Reconocimiento",
+                    desc: "TLRs detectan PAMPs en bacteria",
+                    visual: "reconocimiento"
+                },
+                {
+                    nombre: "Fagocitosis",
+                    desc: "Formación del fagosoma",
+                    visual: "fagocitosis"
+                },
+                {
+                    nombre: "Degranulación",
+                    desc: "Liberación de elastasa y MPO",
+                    visual: "degranulacion"
+                },
+                {
+                    nombre: "Estallido Respiratorio",
+                    desc: "NADPH oxidasa genera ROS",
+                    visual: "estallido"
+                },
+                {
+                    nombre: "NETs",
+                    desc: "Trampas de ADN extracelular",
+                    visual: "nets"
+                }
+            ]
+        },
+        caracteristicas: [
+            { t: "Morfología", d: "12-15 μm, núcleo 2-5 lóbulos" },
+            { t: "Vida", d: "6-24h circulación, <5 días tejidos" },
+            { t: "Producción", d: "1-2×10¹¹ células/día" }
+        ],
+        glosario: [
+            {t: "ROS", d: "Especies reactivas de oxígeno: O₂⁻, H₂O₂, HOCl"},
+            {t: "NETs", d: "Trampas de cromatina + enzimas"}
+        ]
+    },
+
+    macrofagos: {
+        title: "Macrófagos - Fagocitosis Profesional",
+        defensa: 95,
+        tiempo: "meses",
+        mecanismo: {
+            titulo: "⚙️ Proceso Fagocítico",
+            pasos: [
+                {
+                    nombre: "Vigilancia",
+                    desc: "Pseudópodos explorando tejido",
+                    visual: "vigilancia"
+                },
+                {
+                    nombre: "Reconocimiento PRR",
+                    desc: "TLRs detectan PAMPs",
+                    visual: "reconocimiento_prr"
+                },
+                {
+                    nombre: "Opsonización",
+                    desc: "Receptores Fc unen IgG",
+                    visual: "opsonizacion"
+                },
+                {
+                    nombre: "Engullimiento",
+                    desc: "Copa fagocítica rodea bacteria",
+                    visual: "engullimiento"
+                },
+                {
+                    nombre: "Fagosoma",
+                    desc: "Vesícula internalizada",
+                    visual: "fagosoma"
+                },
+                {
+                    nombre: "Fusión Lisosoma",
+                    desc: "pH ↓ 4.5, enzimas activadas",
+                    visual: "fusion"
+                },
+                {
+                    nombre: "Destrucción",
+                    desc: "ROS + hidrolasas ácidas",
+                    visual: "destruccion"
+                },
+                {
+                    nombre: "Presentación MHC-II",
+                    desc: "Péptidos en superficie",
+                    visual: "presentacion"
+                }
+            ]
+        },
+        caracteristicas: [
+            { t: "Tamaño", d: "20-80 μm con pseudópodos" },
+            { t: "Polarización", d: "M1 (pro-inflamatorio) vs M2 (reparación)" }
+        ],
+        glosario: [
+            {t: "Fagolisosoma", d: "Fusión fagosoma + lisosoma, pH 4.5"},
+            {t: "MHC-II", d: "Presenta péptidos a linfocitos T CD4+"}
+        ]
+    },
+
+    dendriticas: {
+        title: "Células Dendríticas - Presentación",
+        defensa: 100,
+        tiempo: "días",
+        mecanismo: {
+            titulo: "⚙️ Activación de Linfocitos T",
+            pasos: [
+                {
+                    nombre: "Estado Inmaduro",
+                    desc: "Alta capacidad fagocítica",
+                    visual: "inmaduro"
+                },
+                {
+                    nombre: "Captura Antígeno",
+                    desc: "Macropinocitosis activa",
+                    visual: "captura"
+                },
+                {
+                    nombre: "Señal Peligro",
+                    desc: "PAMPs activan TLRs",
+                    visual: "senal_peligro"
+                },
+                {
+                    nombre: "Procesamiento",
+                    desc: "Péptidos 8-20 aminoácidos",
+                    visual: "procesamiento"
+                },
+                {
+                    nombre: "Migración",
+                    desc: "CCR7 → ganglio linfático",
+                    visual: "migracion"
+                },
+                {
+                    nombre: "Maduración",
+                    desc: "↑MHC-II, ↑CD80/86",
+                    visual: "maduracion"
+                },
+                {
+                    nombre: "Sinapsis Inmune",
+                    desc: "Contacto con linfocito T",
+                    visual: "sinapsis"
+                },
+                {
+                    nombre: "3 Señales",
+                    desc: "MHC-péptido, CD80/86, citoquinas",
+                    visual: "tres_senales"
+                }
+            ]
+        },
+        caracteristicas: [
+            { t: "Dendritas", d: "↑1000× superficie contacto" },
+            { t: "Migración", d: "Tejido → ganglio en 12-24h" }
+        ],
+        glosario: [
+            {t: "CCR7", d: "Receptor quimioquinas, guía a ganglios"},
+            {t: "Sinapsis Inmune", d: "Zona contacto CD-linfocito T"}
+        ]
+    },
+
+    fagocitosis: {
+        title: "Fagocitosis - Destrucción Intracelular",
+        defensa: 95,
+        tiempo: "minutos",
+        mecanismo: {
+            titulo: "⚙️ Etapas Fagocíticas",
+            pasos: [
+                {
+                    nombre: "Quimiotaxis",
+                    desc: "Gradiente C5a, LTB4 (20μm/min)",
+                    visual: "quimio_fago"
+                },
+                {
+                    nombre: "Adhesión",
+                    desc: "Receptores TLR, Fc, C3b",
+                    visual: "adhesion_fago"
+                },
+                {
+                    nombre: "Copa Fagocítica",
+                    desc: "Pseudópodos tipo 'cremallera'",
+                    visual: "copa"
+                },
+                {
+                    nombre: "Cierre Fagosoma",
+                    desc: "Fusión membrana, escisión",
+                    visual: "cierre"
+                },
+                {
+                    nombre: "Acidificación",
+                    desc: "pH 6 → 5 → 4.5",
+                    visual: "acidificacion"
+                },
+                {
+                    nombre: "Fusión Lisosoma",
+                    desc: ">50 hidrolasas ácidas",
+                    visual: "fusion_liso"
+                },
+                {
+                    nombre: "ROS",
+                    desc: "NADPH oxidasa → O₂⁻ → H₂O₂",
+                    visual: "ros"
+                },
+                {
+                    nombre: "Digestión",
+                    desc: "Destrucción completa bacteria",
+                    visual: "digestion"
+                }
+            ]
+        },
+        caracteristicas: [
+            { t: "Opsonización", d: "↑100× eficiencia con IgG/C3b" },
+            { t: "ROS", d: "O₂⁻, H₂O₂, •OH, HOCl" }
+        ],
+        glosario: [
+            {t: "Copa Fagocítica", d: "Proyecciones membrana rodean partícula"},
+            {t: "Fagolisosoma", d: "Fusión fagosoma + lisosoma, pH 4.5"}
+        ]
+    }
+};
+
+function updateView(level) {
+    currentLevel = level;
+    currentPaso = 0;
+    const info = data[level];
+    
+    document.querySelectorAll('.btn-level').forEach(btn => btn.classList.remove('active-btn'));
+    event.target.classList.add('active-btn');
+    
+    document.getElementById('status-text').innerHTML = `
+        <strong style="color: #00f2ff;">${info.title}</strong><br>
+        <span style="font-size: 0.85em;">Haz clic en cada paso para ver su animación detallada</span>
+    `;
+    
+    document.getElementById('stat-paso').textContent = `0/${info.mecanismo.pasos.length}`;
+    document.getElementById('stat-nivel').textContent = level.substring(0, 4).toUpperCase();
+    document.getElementById('stat-defensa').textContent = info.defensa + '%';
+    document.getElementById('stat-tiempo').textContent = info.tiempo;
+    
+    let glosarioHTML = '';
+    
+    if (info.caracteristicas) {
+        glosarioHTML += '<div class="caracteristica-card">';
+        glosarioHTML += '<div class="caracteristica-title">📊 Características</div>';
+        info.caracteristicas.forEach(c => {
+            glosarioHTML += `<div class="caracteristica"><strong>${c.t}:</strong> ${c.d}</div>`;
+        });
+        glosarioHTML += '</div>';
+    }
+    
+    if (info.glosario) {
+        info.glosario.forEach(c => {
+            glosarioHTML += `<div class="concept"><strong>${c.t}</strong>${c.d}</div>`;
+        });
+    }
+    
+    document.getElementById('concept-content').innerHTML = glosarioHTML;
+    
+    const mecanismoDiv = document.getElementById('mecanismo-container');
+    let mecanismoHTML = '<div class="mecanismo-panel">';
+    mecanismoHTML += `<div class="mecanismo-title">${info.mecanismo.titulo}</div>`;
+    info.mecanismo.pasos.forEach((paso, index) => {
+        mecanismoHTML += `
+            <div class="paso ${index === 0 ? 'active' : ''}" onclick="seleccionarPaso(${index})" id="paso-${index}">
+                <span class="paso-numero">${index + 1}</span>
+                <span><strong>${paso.nombre}:</strong> ${paso.desc}</span>
+            </div>
+        `;
+    });
+    mecanismoHTML += '</div>';
+    mecanismoDiv.innerHTML = mecanismoHTML;
+    
+    seleccionarPaso(0);
+}
+
+function seleccionarPaso(index) {
+    if (!currentLevel) return;
+    
+    const info = data[currentLevel];
+    if (index < 0 || index >= info.mecanismo.pasos.length) return;
+    
+    currentPaso = index;
+    const paso = info.mecanismo.pasos[index];
+    
+    document.querySelectorAll('.paso').forEach(p => p.classList.remove('active'));
+    document.getElementById(`paso-${index}`).classList.add('active');
+    
+    document.getElementById('paso-indicator').textContent = `Paso ${index + 1}: ${paso.nombre}`;
+    document.getElementById('stat-paso').textContent = `${index + 1}/${info.mecanismo.pasos.length}`;
+    
+    iniciarAnimacionPaso(paso.visual, paso.nombre);
+}
+
+function anteriorPaso() {
+    if (currentPaso > 0) {
+        seleccionarPaso(currentPaso - 1);
+    }
+}
+
+function siguientePaso() {
+    const info = data[currentLevel];
+    if (currentPaso < info.mecanismo.pasos.length - 1) {
+        seleccionarPaso(currentPaso + 1);
+    }
+}
+
+function reproducirSecuencia() {
+    const info = data[currentLevel];
+    let index = 0;
+    
+    const interval = setInterval(() => {
+        seleccionarPaso(index);
+        index++;
+        
+        if (index >= info.mecanismo.pasos.length) {
+            clearInterval(interval);
+        }
+    }, 3000);
+}
+
+function iniciarAnimacionPaso(visual, nombre) {
+    elementos = [];
+    particulas = [];
+    
+    switch(visual) {
+        case 'quimiotaxis':
+            crearAnimacionQuimiotaxis();
+            break;
+        case 'adhesion':
+            crearAnimacionAdhesion();
+            break;
+        case 'diapedesis':
+            crearAnimacionDiapedesis();
+            break;
+        case 'reconocimiento':
+            crearAnimacionReconocimiento();
+            break;
+        case 'fagocitosis':
+        case 'engullimiento':
+            crearAnimacionFagocitosis();
+            break;
+        case 'degranulacion':
+            crearAnimacionDegranulacion();
+            break;
+        case 'estallido':
+        case 'ros':
+            crearAnimacionEstallido();
+            break;
+        case 'nets':
+            crearAnimacionNETs();
+            break;
+        case 'vigilancia':
+            crearAnimacionVigilancia();
+            break;
+        case 'opsonizacion':
+            crearAnimacionOpsonizacion();
+            break;
+        case 'fagosoma':
+            crearAnimacionFagosoma();
+            break;
+        case 'fusion':
+        case 'fusion_liso':
+            crearAnimacionFusion();
+            break;
+        case 'destruccion':
+            crearAnimacionDestruccion();
+            break;
+        case 'presentacion':
+            crearAnimacionPresentacion();
+            break;
+        case 'captura':
+            crearAnimacionCaptura();
+            break;
+        case 'migracion':
+            crearAnimacionMigracion();
+            break;
+        case 'sinapsis':
+            crearAnimacionSinapsis();
+            break;
+        default:
+            crearAnimacionGeneral(nombre);
+    }
+}
+
+// ANIMACIONES ESPECÍFICAS
+
+function crearAnimacionQuimiotaxis() {
+    elementos.push({
+        tipo: 'neutrofilo',
+        x: 100,
+        y: 300,
+        targetX: 600,
+        targetY: 300,
+        size: 25,
+        velocidad: 2
+    });
+    
+    elementos.push({
+        tipo: 'bacteria',
+        x: 650,
+        y: 300,
+        size: 15
+    });
+    
+    for (let i = 0; i < 20; i++) {
+        particulas.push({
+            tipo: 'quimioquina',
+            x: 650 - i * 25,
+            y: 300 + (Math.random() - 0.5) * 100,
+            opacity: 1 - i * 0.05,
+            size: 5
+        });
+    }
+}
+
+function crearAnimacionAdhesion() {
+    elementos.push({
+        tipo: 'endotelio',
+        x: 0,
+        y: 250,
+        width: 800,
+        height: 100
+    });
+    
+    elementos.push({
+        tipo: 'neutrofilo',
+        x: 200,
+        y: 150,
+        targetY: 300,
+        size: 25,
+        fase: 0
+    });
+    
+    for (let i = 0; i < 5; i++) {
+        elementos.push({
+            tipo: 'selectina',
+            x: 180 + i * 40,
+            y: 250,
+            size: 8,
+            fase: i * 0.5
+        });
+    }
+}
+
+function crearAnimacionDiapedesis() {
+    elementos.push({
+        tipo: 'endotelio',
+        x: 0,
+        y: 250,
+        width: 800,
+        height: 100
+    });
+    
+    elementos.push({
+        tipo: 'neutrofilo_deformado',
+        x: 400,
+        y: 250,
+        targetY: 380,
+        size: 25,
+        fase: 0,
+        deformacion: 0
+    });
+    
+    elementos.push({
+        tipo: 'tejido',
+        x: 0,
+        y: 350,
+        width: 800,
+        height: 250,
+        opacity: 0.3
+    });
+}
+
+function crearAnimacionReconocimiento() {
+    elementos.push({
+        tipo: 'neutrofilo_grande',
+        x: 250,
+        y: 300,
+        size: 40
+    });
+    
+    elementos.push({
+        tipo: 'bacteria',
+        x: 500,
+        y: 300,
+        size: 20
+    });
+    
+    for (let i = 0; i < 6; i++) {
+        elementos.push({
+            tipo: 'tlr',
+            x: 250 + Math.cos(i * Math.PI / 3) * 55,
+            y: 300 + Math.sin(i * Math.PI / 3) * 55,
+            size: 8,
+            angulo: i * Math.PI / 3,
+            activo: false,
+            tiempoActivacion: i * 10
+        });
+    }
+    
+    for (let i = 0; i < 8; i++) {
+        particulas.push({
+            tipo: 'pamp',
+            x: 500 + (Math.random() - 0.5) * 30,
+            y: 300 + (Math.random() - 0.5) * 30,
+            size: 4,
+            fase: Math.random() * Math.PI * 2
+        });
+    }
+}
+
+function crearAnimacionFagocitosis() {
+    elementos.push({
+        tipo: 'macrofago_fagocitando',
+        x: 300,
+        y: 300,
+        size: 50,
+        apertura: 0,
+        bacteria: {
+            x: 500,
+            y: 300,
+            size: 18,
+            distancia: 200
+        }
+    });
+}
+
+function crearAnimacionDegranulacion() {
+    elementos.push({
+        tipo: 'neutrofilo_grande',
+        x: 400,
+        y: 300,
+        size: 45
+    });
+    
+    for (let i = 0; i < 15; i++) {
+        const angulo = (i / 15) * Math.PI * 2;
+        elementos.push({
+            tipo: 'granulo',
+            x: 400,
+            y: 300,
+            targetX: 400 + Math.cos(angulo) * 120,
+            targetY: 300 + Math.sin(angulo) * 120,
+            size: 6,
+            color: i % 3 === 0 ? '#ff6b9d' : (i % 3 === 1 ? '#ffeb3b' : '#00f2ff'),
+            velocidad: 1 + Math.random()
+        });
+    }
+}
+
+function crearAnimacionEstallido() {
+    elementos.push({
+        tipo: 'neutrofilo_grande',
+        x: 400,
+        y: 300,
+        size: 45
+    });
+    
+    for (let i = 0; i < 30; i++) {
+        particulas.push({
+            tipo: 'ros',
+            x: 400,
+            y: 300,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            size: 4 + Math.random() * 4,
+            vida: 60,
+            color: ['#ffeb3b', '#ff6b9d', '#00f2ff'][i % 3]
+        });
+    }
+}
+
+function crearAnimacionNETs() {
+    elementos.push({
+        tipo: 'neutrofilo_grande',
+        x: 400,
+        y: 300,
+        size: 35,
+        expansion: 0
+    });
+    
+    for (let i = 0; i < 12; i++) {
+        const angulo = (i / 12) * Math.PI * 2;
+        elementos.push({
+            tipo: 'net_strand',
+            baseX: 400,
+            baseY: 300,
+            angulo: angulo,
+            longitud: 0,
+            maxLongitud: 100 + Math.random() * 80,
+            velocidad: 2
+        });
+    }
+    
+    for (let i = 0; i < 3; i++) {
+        elementos.push({
+            tipo: 'bacteria',
+            x: 350 + Math.random() * 100,
+            y: 250 + Math.random() * 100,
+            size: 12,
+            atrapada: false
+        });
+    }
+}
+
+function crearAnimacionVigilancia() {
+    elementos.push({
+        tipo: 'macrofago_vigilante',
+        x: 400,
+        y: 300,
+        size: 50,
+        pseudopodos: []
+    });
+    
+    for (let i = 0; i < 6; i++) {
+        elementos[0].pseudopodos.push({
+            angulo: (i / 6) * Math.PI * 2,
+            longitud: 40,
+            fase: i * Math.PI / 3,
+            velocidad: 0.05
+        });
+    }
+    
+    for (let i = 0; i < 8; i++) {
+        particulas.push({
+            tipo: 'debris',
+            x: Math.random() * 800,
+            y: Math.random() * 600,
+            size: 6,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5
+        });
+    }
+}
+
+function crearAnimacionOpsonizacion() {
+    elementos.push({
+        tipo: 'bacteria_grande',
+        x: 400,
+        y: 300,
+        size: 30
+    });
+    
+    for (let i = 0; i < 20; i++) {
+        const angulo = (i / 20) * Math.PI * 2;
+        elementos.push({
+            tipo: 'anticuerpo',
+            x: 400 + Math.cos(angulo) * 100,
+            y: 300 + Math.sin(angulo) * 100,
+            targetX: 400 + Math.cos(angulo) * 35,
+            targetY: 300 + Math.sin(angulo) * 35,
+            size: 8,
+            velocidad: 1.5,
+            unido: false
+        });
+    }
+}
+
+function crearAnimacionFagosoma() {
+    elementos.push({
+        tipo: 'macrofago_grande',
+        x: 400,
+        y: 300,
+        size: 60
+    });
+    
+    elementos.push({
+        tipo: 'fagosoma_interno',
+        x: 420,
+        y: 320,
+        size: 25,
+        contenido: 'bacteria'
+    });
+    
+    elementos.push({
+        tipo: 'bacteria_interna',
+        x: 420,
+        y: 320,
+        size: 12
+    });
+}
+
+function crearAnimacionFusion() {
+    elementos.push({
+        tipo: 'macrofago_grande',
+        x: 400,
+        y: 300,
+        size: 60
+    });
+    
+    elementos.push({
+        tipo: 'fagosoma_fusion',
+        x: 420,
+        y: 300,
+        size: 22
+    });
+    
+    elementos.push({
+        tipo: 'lisosoma',
+        x: 350,
+        y: 330,
+        targetX: 420,
+        targetY: 300,
+        size: 18,
+        velocidad: 1
+    });
+    
+    for (let i = 0; i < 10; i++) {
+        particulas.push({
+            tipo: 'enzima',
+            x: 350,
+            y: 330,
+            size: 3,
+            fase: i * 0.5
+        });
+    }
+}
+
+function crearAnimacionDestruccion() {
+    elementos.push({
+        tipo: 'macrofago_grande',
+        x: 400,
+        y: 300,
+        size: 60
+    });
+    
+    elementos.push({
+        tipo: 'fagolisosoma',
+        x: 420,
+        y: 320,
+        size: 28,
+        acidez: 0
+    });
+    
+    elementos.push({
+        tipo: 'bacteria_destruyendose',
+        x: 420,
+        y: 320,
+        size: 15,
+        integridad: 100
+    });
+    
+    for (let i = 0; i < 25; i++) {
+        particulas.push({
+            tipo: 'ros_interno',
+            x: 420,
+            y: 320,
+            angulo: Math.random() * Math.PI * 2,
+            radio: 5,
+            velocidad: 0.5,
+            size: 3
+        });
+    }
+}
+
+function crearAnimacionPresentacion() {
+    elementos.push({
+        tipo: 'macrofago_presentador',
+        x: 250,
+        y: 300,
+        size: 55
+    });
+    
+    for (let i = 0; i < 8; i++) {
+        elementos.push({
+            tipo: 'mhc2',
+            x: 250 + Math.cos(i * Math.PI / 4) * 70,
+            y: 300 + Math.sin(i * Math.PI / 4) * 70,
+            size: 12,
+            peptido: true,
+            fase: i * 0.3
+        });
+    }
+    
+    elementos.push({
+        tipo: 'linfocito_t',
+        x: 550,
+        y: 300,
+        targetX: 350,
+        size: 35,
+        velocidad: 1
+    });
+}
+
+function crearAnimacionCaptura() {
+    elementos.push({
+        tipo: 'dendritica_inmadura',
+        x: 400,
+        y: 300,
+        size: 40,
+        dendritas: []
+    });
+    
+    for (let i = 0; i < 8; i++) {
+        elementos[0].dendritas.push({
+            angulo: (i / 8) * Math.PI * 2,
+            longitud: 60,
+            grosor: 3
+        });
+    }
+    
+    for (let i = 0; i < 15; i++) {
+        particulas.push({
+            tipo: 'antigeno',
+            x: Math.random() * 800,
+            y: Math.random() * 600,
+            targetX: 400,
+            targetY: 300,
+            size: 6,
+            capturado: false,
+            velocidad: 0.5 + Math.random() * 0.5
+        });
+    }
+}
+
+function crearAnimacionMigracion() {
+    elementos.push({
+        tipo: 'dendritica_migrando',
+        x: 100,
+        y: 400,
+        targetX: 700,
+        targetY: 200,
+        size: 35,
+        velocidad: 2,
+        dendritas: 8
+    });
+    
+    elementos.push({
+        tipo: 'tejido_periferico',
+        x: 50,
+        y: 350,
+        width: 200,
+        height: 200,
+        label: 'Tejido'
+    });
+    
+    elementos.push({
+        tipo: 'ganglio',
+        x: 650,
+        y: 150,
+        size: 80,
+        label: 'Ganglio Linfático'
+    });
+    
+    for (let i = 0; i < 30; i++) {
+        const progress = i / 30;
+        particulas.push({
+            tipo: 'ccl21',
+            x: 100 + (600 * progress),
+            y: 400 - (200 * progress),
+            size: 4,
+            opacity: 0.3 + Math.random() * 0.4
+        });
+    }
+}
+
+function crearAnimacionSinapsis() {
+    elementos.push({
+        tipo: 'dendritica_madura',
+        x: 300,
+        y: 300,
+        size: 45
+    });
+    
+    elementos.push({
+        tipo: 'linfocito_t_virgen',
+        x: 500,
+        y: 300,
+        targetX: 380,
+        size: 40,
+        velocidad: 1
+    });
+    
+    elementos.push({
+        tipo: 'sinapsis_zone',
+        x: 340,
+        y: 300,
+        size: 0,
+        maxSize: 80
+    });
+}
+
+function crearAnimacionGeneral(nombre) {
+    elementos.push({
+        tipo: 'celula_generica',
+        x: 400,
+        y: 300,
+        size: 50,
+        label: nombre
+    });
+}
+
+// LOOP DE ANIMACIÓN
+
+function animarCanvas() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Actualizar y dibujar elementos
+    elementos.forEach((elem, index) => {
+        actualizarElemento(elem);
+        dibujarElemento(elem);
+    });
+    
+    // Actualizar y dibujar partículas
+    particulas = particulas.filter(p => {
+        actualizarParticula(p);
+        dibujarParticula(p);
+        return p.vida === undefined || p.vida > 0;
+    });
+    
+    animationFrame++;
+    requestAnimationFrame(animarCanvas);
+}
+
+function actualizarElemento(elem) {
+    switch(elem.tipo) {
+        case 'neutrofilo':
+            if (elem.targetX !== undefined) {
+                const dx = elem.targetX - elem.x;
+                const dy = elem.targetY - elem.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 5) {
+                    elem.x += (dx / dist) * elem.velocidad;
+                    elem.y += (dy / dist) * elem.velocidad;
+                }
+            }
+            break;
+            
+        case 'neutrofilo_deformado':
+            if (elem.targetY !== undefined) {
+                const dy = elem.targetY - elem.y;
+                if (Math.abs(dy) > 2) {
+                    elem.y += Math.sign(dy) * 1.5;
+                    elem.deformacion = Math.sin(animationFrame * 0.1) * 0.3;
+                }
+            }
+            break;
+            
+        case 'macrofago_fagocitando':
+            const bacteria = elem.bacteria;
+            bacteria.distancia -= 1.5;
+            if (bacteria.distancia > 0) {
+                bacteria.x = elem.x + Math.cos(0) * bacteria.distancia;
+            } else {
+                bacteria.x = elem.x;
+                bacteria.y = elem.y;
+                bacteria.size *= 0.98;
+            }
+            elem.apertura = Math.min(elem.apertura + 0.02, Math.PI / 2);
+            break;
+            
+        case 'granulo':
+            const gdx = elem.targetX - elem.x;
+            const gdy = elem.targetY - elem.y;
+            elem.x += gdx * 0.05 * elem.velocidad;
+            elem.y += gdy * 0.05 * elem.velocidad;
+            break;
+            
+        case 'net_strand':
+            if (elem.longitud < elem.maxLongitud) {
+                elem.longitud += elem.velocidad;
+            }
+            break;
+            
+        case 'macrofago_vigilante':
+            elem.pseudopodos.forEach(p => {
+                p.fase += p.velocidad;
+                p.longitud = 40 + Math.sin(p.fase) * 20;
+            });
+            break;
+            
+        case 'anticuerpo':
+            if (!elem.unido) {
+                const dx = elem.targetX - elem.x;
+                const dy = elem.targetY - elem.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 2) {
+                    elem.x += (dx / dist) * elem.velocidad;
+                    elem.y += (dy / dist) * elem.velocidad;
+                } else {
+                    elem.unido = true;
+                }
+            }
+            break;
+            
+        case 'lisosoma':
+            if (elem.targetX !== undefined) {
+                const dx = elem.targetX - elem.x;
+                const dy = elem.targetY - elem.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 5) {
+                    elem.x += (dx / dist) * elem.velocidad;
+                    elem.y += (dy / dist) * elem.velocidad;
+                }
+            }
+            break;
+            
+        case 'bacteria_destruyendose':
+            if (elem.integridad > 0) {
+                elem.integridad -= 0.5;
+                elem.size = 15 * (elem.integridad / 100);
+            }
+            break;
+            
+        case 'linfocito_t':
+        case 'linfocito_t_virgen':
+            if (elem.targetX !== undefined) {
+                const dx = elem.targetX - elem.x;
+                const dist = Math.abs(dx);
+                if (dist > 5) {
+                    elem.x += Math.sign(dx) * elem.velocidad;
+                }
+            }
+            break;
+            
+        case 'dendritica_migrando':
+            if (elem.targetX !== undefined) {
+                const dx = elem.targetX - elem.x;
+                const dy = elem.targetY - elem.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 5) {
+                    elem.x += (dx / dist) * elem.velocidad;
+                    elem.y += (dy / dist) * elem.velocidad;
+                }
+            }
+            break;
+            
+        case 'sinapsis_zone':
+            if (elem.size < elem.maxSize) {
+                elem.size += 1;
+            }
+            break;
+    }
+}
+
+function actualizarParticula(p) {
+    switch(p.tipo) {
+        case 'ros':
+        case 'ros_interno':
+            if (p.vida !== undefined) {
+                p.vida--;
+                p.x += p.vx || 0;
+                p.y += p.vy || 0;
+            }
+            if (p.angulo !== undefined) {
+                p.angulo += 0.05;
+                p.radio += p.velocidad;
+            }
+            break;
+            
+        case 'debris':
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0 || p.x > 800) p.vx *= -1;
+            if (p.y < 0 || p.y > 600) p.vy *= -1;
+            break;
+            
+        case 'antigeno':
+            if (!p.capturado) {
+                const dx = p.targetX - p.x;
+                const dy = p.targetY - p.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 10) {
+                    p.x += (dx / dist) * p.velocidad;
+                    p.y += (dy / dist) * p.velocidad;
+                } else {
+                    p.capturado = true;
+                }
+            }
+            break;
+    }
+}
+
+function dibujarElemento(elem) {
+    ctx.save();
+    
+    switch(elem.tipo) {
+        case 'neutrofilo':
+        case 'neutrofilo_grande':
+            ctx.fillStyle = '#ff6b9d';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff6b9d';
+            
+            // Núcleo multilobulado
+            for (let i = 0; i < 4; i++) {
+                const angle = (i / 4) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.arc(
+                    elem.x + Math.cos(angle) * elem.size * 0.3,
+                    elem.y + Math.sin(angle) * elem.size * 0.3,
+                    elem.size * 0.35,
+                    0, Math.PI * 2
+                );
+                ctx.fill();
+            }
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'neutrofilo_deformado':
+            ctx.fillStyle = '#ff6b9d';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff6b9d';
+            
+            ctx.beginPath();
+            ctx.ellipse(
+                elem.x,
+                elem.y,
+                elem.size * (1 + elem.deformacion),
+                elem.size * (1 - elem.deformacion),
+                Math.PI / 2,
+                0, Math.PI * 2
+            );
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'bacteria':
+        case 'bacteria_grande':
+        case 'bacteria_interna':
+            ctx.fillStyle = '#c8102e';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#c8102e';
+            
+            ctx.beginPath();
+            ctx.ellipse(elem.x, elem.y, elem.size * 1.5, elem.size * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'bacteria_destruyendose':
+            if (elem.integridad > 0) {
+                ctx.fillStyle = `rgba(200, 16, 46, ${elem.integridad / 100})`;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#c8102e';
+                
+                ctx.beginPath();
+                ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+            }
+            break;
+            
+        case 'endotelio':
+            ctx.fillStyle = 'rgba(139, 69, 19, 0.3)';
+            ctx.fillRect(elem.x, elem.y, elem.width, elem.height);
+            
+            ctx.strokeStyle = '#8b4513';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(elem.x, elem.y, elem.width, elem.height);
+            break;
+            
+        case 'tejido':
+            ctx.fillStyle = `rgba(78, 205, 196, ${elem.opacity})`;
+            ctx.fillRect(elem.x, elem.y, elem.width, elem.height);
+            break;
+            
+        case 'selectina':
+            ctx.fillStyle = '#ffeb3b';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#ffeb3b';
+            
+            const pulso = Math.sin(animationFrame * 0.05 + elem.fase) * 0.2 + 1;
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size * pulso, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'tlr':
+            const tiempoActual = animationFrame;
+            if (tiempoActual > elem.tiempoActivacion) {
+                elem.activo = true;
+            }
+            
+            ctx.fillStyle = elem.activo ? '#ffeb3b' : '#00f2ff';
+            ctx.shadowBlur = elem.activo ? 12 : 6;
+            ctx.shadowColor = elem.activo ? '#ffeb3b' : '#00f2ff';
+            
+            ctx.translate(elem.x, elem.y);
+            ctx.rotate(elem.angulo);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -elem.size);
+            ctx.lineTo(elem.size * 0.5, 0);
+            ctx.lineTo(0, elem.size);
+            ctx.lineTo(-elem.size * 0.5, 0);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'macrofago_fagocitando':
+            ctx.fillStyle = '#4ecdc4';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#4ecdc4';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Copa fagocítica
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size + 10, -elem.apertura, elem.apertura);
+            ctx.stroke();
+            
+            // Bacteria siendo engullida
+            const bacteria = elem.bacteria;
+            ctx.fillStyle = '#c8102e';
+            ctx.shadowColor = '#c8102e';
+            ctx.beginPath();
+            ctx.arc(bacteria.x, bacteria.y, bacteria.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'macrofago_grande':
+        case 'macrofago_presentador':
+            ctx.fillStyle = '#4ecdc4';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#4ecdc4';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'macrofago_vigilante':
+            ctx.fillStyle = '#4ecdc4';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#4ecdc4';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Pseudópodos dinámicos
+            elem.pseudopodos.forEach(p => {
+                ctx.strokeStyle = '#4ecdc4';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(elem.x, elem.y);
+                ctx.lineTo(
+                    elem.x + Math.cos(p.angulo) * p.longitud,
+                    elem.y + Math.sin(p.angulo) * p.longitud
+                );
+                ctx.stroke();
+                
+                ctx.fillStyle = '#4ecdc4';
+                ctx.beginPath();
+                ctx.arc(
+                    elem.x + Math.cos(p.angulo) * p.longitud,
+                    elem.y + Math.sin(p.angulo) * p.longitud,
+                    6, 0, Math.PI * 2
+                );
+                ctx.fill();
+            });
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'granulo':
+            ctx.fillStyle = elem.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = elem.color;
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'net_strand':
+            ctx.strokeStyle = '#a78bfa';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#a78bfa';
+            
+            ctx.beginPath();
+            ctx.moveTo(elem.baseX, elem.baseY);
+            ctx.lineTo(
+                elem.baseX + Math.cos(elem.angulo) * elem.longitud,
+                elem.baseY + Math.sin(elem.angulo) * elem.longitud
+            );
+            ctx.stroke();
+            
+            // Nodos en la red
+            for (let i = 0; i < elem.longitud; i += 15) {
+                ctx.fillStyle = '#ffeb3b';
+                ctx.beginPath();
+                ctx.arc(
+                    elem.baseX + Math.cos(elem.angulo) * i,
+                    elem.baseY + Math.sin(elem.angulo) * i,
+                    3, 0, Math.PI * 2
+                );
+                ctx.fill();
+            }
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'anticuerpo':
+            ctx.fillStyle = elem.unido ? '#00f2ff' : '#ffeb3b';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = elem.unido ? '#00f2ff' : '#ffeb3b';
+            
+            // Forma de Y
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y - 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = elem.unido ? '#00f2ff' : '#ffeb3b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(elem.x, elem.y);
+            ctx.lineTo(elem.x - 3, elem.y + 4);
+            ctx.moveTo(elem.x, elem.y);
+            ctx.lineTo(elem.x + 3, elem.y + 4);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'fagosoma_interno':
+        case 'fagosoma_fusion':
+            ctx.strokeStyle = '#9966ff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#9966ff';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'lisosoma':
+            ctx.fillStyle = '#ff8c42';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#ff8c42';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'fagolisosoma':
+            ctx.fillStyle = 'rgba(200, 16, 46, 0.2)';
+            ctx.strokeStyle = '#ff6b9d';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff6b9d';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'mhc2':
+            const pulseMHC = Math.sin(animationFrame * 0.05 + elem.fase) * 0.2 + 1;
+            
+            ctx.fillStyle = '#ffeb3b';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#ffeb3b';
+            
+            ctx.beginPath();
+            ctx.rect(elem.x - 6, elem.y - 4, 12, 8);
+            ctx.fill();
+            
+            // Péptido
+            ctx.fillStyle = '#c8102e';
+            ctx.beginPath();
+            ctx.rect(elem.x - 4, elem.y - 2, 8 * pulseMHC, 4);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'linfocito_t':
+        case 'linfocito_t_virgen':
+            ctx.fillStyle = '#a78bfa';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#a78bfa';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Receptor TCR
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                ctx.fillStyle = '#00f2ff';
+                ctx.beginPath();
+                ctx.arc(
+                    elem.x + Math.cos(angle) * (elem.size + 5),
+                    elem.y + Math.sin(angle) * (elem.size + 5),
+                    4, 0, Math.PI * 2
+                );
+                ctx.fill();
+            }
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'dendritica_inmadura':
+        case 'dendritica_madura':
+            ctx.fillStyle = '#fbbf24';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#fbbf24';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            if (elem.dendritas) {
+                elem.dendritas.forEach(d => {
+                    ctx.strokeStyle = '#fbbf24';
+                    ctx.lineWidth = d.grosor || 2;
+                    ctx.beginPath();
+                    ctx.moveTo(elem.x, elem.y);
+                    ctx.lineTo(
+                        elem.x + Math.cos(d.angulo) * d.longitud,
+                        elem.y + Math.sin(d.angulo) * d.longitud
+                    );
+                    ctx.stroke();
+                });
+            }
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'dendritica_migrando':
+            ctx.fillStyle = '#fbbf24';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#fbbf24';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Dendritas cortas durante migración
+            for (let i = 0; i < elem.dendritas; i++) {
+                const angle = (i / elem.dendritas) * Math.PI * 2;
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(elem.x, elem.y);
+                ctx.lineTo(
+                    elem.x + Math.cos(angle) * 45,
+                    elem.y + Math.sin(angle) * 45
+                );
+                ctx.stroke();
+            }
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'tejido_periferico':
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.2)';
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 2;
+            ctx.fillRect(elem.x, elem.y, elem.width, elem.height);
+            ctx.strokeRect(elem.x, elem.y, elem.width, elem.height);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(elem.label, elem.x + elem.width / 2, elem.y + elem.height / 2);
+            break;
+            
+        case 'ganglio':
+            ctx.fillStyle = 'rgba(167, 139, 250, 0.3)';
+            ctx.strokeStyle = '#a78bfa';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#a78bfa';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(elem.label, elem.x, elem.y + 5);
+            break;
+            
+        case 'sinapsis_zone':
+            if (elem.size > 0) {
+                ctx.fillStyle = 'rgba(255, 235, 59, 0.2)';
+                ctx.strokeStyle = '#ffeb3b';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ffeb3b';
+                
+                ctx.beginPath();
+                ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+            }
+            break;
+            
+        case 'celula_generica':
+            ctx.fillStyle = '#9966ff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#9966ff';
+            
+            ctx.beginPath();
+            ctx.arc(elem.x, elem.y, elem.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(elem.label, elem.x, elem.y + 5);
+            break;
+    }
+    
+    ctx.restore();
+}
+
+function dibujarParticula(p) {
+    ctx.save();
+    
+    switch(p.tipo) {
+        case 'quimioquina':
+            ctx.fillStyle = `rgba(255, 235, 59, ${p.opacity})`;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#ffeb3b';
+            
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'pamp':
+            const pulsePAMP = Math.sin(animationFrame * 0.1 + p.fase) * 0.3 + 1;
+            
+            ctx.fillStyle = '#c8102e';
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = '#c8102e';
+            
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * pulsePAMP, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'ros':
+            if (p.vida > 0) {
+                const opacity = p.vida / 60;
+                ctx.fillStyle = p.color.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = p.color;
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+            }
+            break;
+            
+        case 'ros_interno':
+            if (p.angulo !== undefined) {
+                const x = 420 + Math.cos(p.angulo) * p.radio;
+                const y = 320 + Math.sin(p.angulo) * p.radio;
+                
+                ctx.fillStyle = '#ffeb3b';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#ffeb3b';
+                
+                ctx.beginPath();
+                ctx.arc(x, y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+            }
+            break;
+            
+        case 'enzima':
+            const pulseEnz = Math.sin(animationFrame * 0.08 + p.fase) * 0.5 + 1;
+            
+            ctx.fillStyle = '#ff8c42';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * pulseEnz, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+            
+        case 'debris':
+            ctx.fillStyle = '#666';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+            
+        case 'antigeno':
+            ctx.fillStyle = p.capturado ? '#00f2ff' : '#ffeb3b';
+            ctx.shadowBlur = p.capturado ? 10 : 6;
+            ctx.shadowColor = p.capturado ? '#00f2ff' : '#ffeb3b';
+            
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            break;
+            
+        case 'ccl21':
+            ctx.fillStyle = `rgba(0, 242, 255, ${p.opacity})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+    }
+    
+    ctx.restore();
+}
+
+window.onload = () => {
+    animarCanvas();
+};
+</script>
+
+</body>
+</html>
