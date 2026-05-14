@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Inmunidad Innata - UCSC (Animaciones Fluidas)</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent-cyan: #06b6d4;
+    --accent-red: #ef4444;
+    --accent-purple: #8b5cf6;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding: 20px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app-wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    padding: 20px 0 30px;
+  }
+
+  header .badge {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(139,92,246,0.2));
+    border: 1px solid rgba(239,68,68,0.3);
+    color: var(--accent-red);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  header h1 {
+    font-size: clamp(1.4rem, 3vw, 2.2rem);
+    font-weight: 700;
+    background: linear-gradient(135deg, #ef4444, #a78bfa, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+
+  header p {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 8px;
+  }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* SIDEBAR */
+  .sidebar-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    height: fit-content;
+    max-height: calc(100vh - 160px);
+  }
+
+  .sidebar-scroll {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+    padding: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .sim-category {
+    margin-bottom: 20px;
+  }
+
+  .category-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent-red);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sim-btn {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .sim-btn:hover {
+    background: var(--border);
+    border-color: var(--accent-red);
+    transform: translateX(4px);
+  }
+
+  .sim-btn.active {
+    background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(139,92,246,0.15));
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+  }
+
+  /* MAIN CONTENT */
+  .content-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .visualization-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .step-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.2rem;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 8px;
+    background: #000;
+    border: 2px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    text-shadow: 0 0 12px rgba(6,182,212,0.6);
+    letter-spacing: 0.05em;
+  }
+
+  .canvas-wrap {
+    position: relative;
+    padding: 0;
+    background: #0a0e1a;
+  }
+
+  canvas#simCanvas {
+    width: 100%;
+    display: block;
+  }
+
+  /* DESCRIPTION BOX */
+  .description-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 0 20px 16px;
+    min-height: 100px;
+  }
+
+  .desc-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .desc-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .desc-content {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+
+  .desc-content strong {
+    color: var(--text);
+  }
+
+  /* CONTROLS */
+  .controls-panel {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 0 20px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .ctrl-btn {
+    background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2));
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .ctrl-btn:hover {
+    background: linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3));
+    transform: translateY(-2px);
+  }
+
+  .ctrl-btn:active {
+    transform: translateY(0);
+  }
+
+  .ctrl-btn.play {
+    background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2));
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .ctrl-btn.play:hover {
+    background: linear-gradient(135deg, rgba(16,185,129,0.3), rgba(6,182,212,0.3));
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    padding: 0 20px 16px;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+    width: 0%;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px rgba(6,182,212,0.5);
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 900px) {
+    .main-grid { 
+      grid-template-columns: 1fr; 
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <header>
+    <div class="badge">Inmunología UCSC · Segunda Etapa Medicina · Animaciones Fluidas</div>
+    <h1>🔬 Mecanismos de Inmunidad Innata</h1>
+    <p>Transiciones suaves y animaciones continuas entre pasos</p>
+  </header>
+
+  <div class="main-grid">
+    
+    <!-- SIDEBAR -->
+    <div class="sidebar-card">
+      <div class="card-header">
+        <span class="card-title">Seleccionar Proceso</span>
+      </div>
+      <div class="sidebar-scroll">
+        
+        <div class="sim-category">
+          <div class="category-title">Migración Leucocitaria</div>
+          <button class="sim-btn" onclick="loadSim('migracion')">🌊 Extravasación</button>
+          <button class="sim-btn" onclick="loadSim('rodadura')">🎯 Rodadura</button>
+          <button class="sim-btn" onclick="loadSim('adhesion')">🔗 Adhesión</button>
+          <button class="sim-btn" onclick="loadSim('diapedesis')">➡️ Diapédesis</button>
+        </div>
+
+        <div class="sim-category">
+          <div class="category-title">Fagocitosis</div>
+          <button class="sim-btn" onclick="loadSim('fagocitosis')">🦠 Proceso Completo</button>
+          <button class="sim-btn" onclick="loadSim('destruccion')">☠️ Destrucción Microbiana</button>
+        </div>
+
+        <div class="sim-category">
+          <div class="category-title">Sistema Complemento</div>
+          <button class="sim-btn" onclick="loadSim('via-clasica')">🔴 Vía Clásica</button>
+          <button class="sim-btn" onclick="loadSim('via-lectinas')">🔷 Vía Lectinas</button>
+          <button class="sim-btn" onclick="loadSim('via-alternativa')">⚡ Vía Alternativa</button>
+          <button class="sim-btn" onclick="loadSim('mac')">💥 Formación MAC</button>
+          <button class="sim-btn" onclick="loadSim('receptores-complemento')">🎯 Receptores</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="content-area">
+      
+      <div class="visualization-card">
+        <div class="card-header">
+          <span class="card-title" id="sim-title">Selecciona un proceso para comenzar</span>
+          <div class="step-badge">Paso <span id="current-step">0</span>/<span id="total-steps">0</span></div>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="simCanvas" height="550"></canvas>
+        </div>
+
+        <div class="description-panel">
+          <div class="desc-label">📊 Descripción del proceso</div>
+          <div class="desc-title" id="desc-title">Simulador con Animaciones Fluidas</div>
+          <div class="desc-content" id="desc-content">
+            Selecciona un mecanismo del menú lateral. Las transiciones entre pasos son ahora suaves y continuas.
+            Las moléculas se mueven fluidamente en lugar de aparecer/desaparecer instantáneamente.
+          </div>
+        </div>
+
+        <div class="controls-panel">
+          <button class="ctrl-btn" onclick="prevStep()" id="btn-prev">⬅️ Anterior</button>
+          <button class="ctrl-btn play" onclick="togglePlay()" id="btn-play">▶️ Auto</button>
+          <button class="ctrl-btn" onclick="nextStep()" id="btn-next">Siguiente ➡️</button>
+          <button class="ctrl-btn" onclick="resetSim()" id="btn-reset">🔄 Reiniciar</button>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="legend" id="legend-container">
+          <!-- Dynamic legend -->
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+//   CANVAS & STATE
+// ============================================================
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+let currentSim = null;
+let currentStep = 0;
+let totalSteps = 0;
+let isPlaying = false;
+let playInterval = null;
+let entities = [];
+let transitionProgress = 0;
+let isTransitioning = false;
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  W = canvas.width = Math.round(rect.width);
+  H = 550;
+  canvas.style.height = '550px';
+}
+
+// ============================================================
+//   EASING FUNCTIONS
+// ============================================================
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function easeOutQuad(t) {
+  return 1 - (1 - t) * (1 - t);
+}
+
+// ============================================================
+//   PARTICLE CLASS CON ANIMACIONES FLUIDAS
+// ============================================================
+class Particle {
+  constructor(x, y, type, label = '', shouldAppear = true) {
+    this.x = x;
+    this.y = y;
+    this.startX = x;
+    this.startY = y;
+    this.targetX = x;
+    this.targetY = y;
+    this.prevX = x;
+    this.prevY = y;
+    this.type = type;
+    this.label = label;
+    this.radius = this.getRadius();
+    this.targetRadius = this.radius;
+    this.prevRadius = this.radius;
+    this.opacity = shouldAppear ? 0 : 1;  // Fade in effect
+    this.targetOpacity = 1;
+    this.prevOpacity = this.opacity;
+    this.phase = Math.random() * Math.PI * 2;
+    this.moving = false;
+    this.speed = 2;
+    this.id = `${type}_${label}_${Math.random()}`;
+    this.shouldRemove = false;
+    this.birthTime = Date.now();
+  }
+
+  getRadius() {
+    const sizes = {
+      bacteria: 30,
+      phagocyte: 40,
+      neutrophil: 25,
+      antibody: 8,
+      complement: 7,
+      selectin: 10,
+      integrin: 10,
+      receptor: 12,
+      mbl: 15,
+      c1q: 18,
+      mac_ring: 35
+    };
+    return sizes[this.type] || 10;
+  }
+
+  // Método para marcar para eliminación con fade out
+  remove() {
+    this.shouldRemove = true;
+    this.targetOpacity = 0;
+  }
+
+  // Método para mover con transición suave
+  moveTo(x, y, speed = 2) {
+    this.prevX = this.x;
+    this.prevY = this.y;
+    this.targetX = x;
+    this.targetY = y;
+    this.moving = true;
+    this.speed = speed;
+  }
+
+  // Método para cambiar tamaño con transición
+  scaleTo(newRadius) {
+    this.prevRadius = this.radius;
+    this.targetRadius = newRadius;
+  }
+
+  // Método para fade in/out
+  fadeTo(newOpacity) {
+    this.prevOpacity = this.opacity;
+    this.targetOpacity = newOpacity;
+  }
+
+  update() {
+    // Fade in cuando aparece
+    if (Date.now() - this.birthTime < 500 && this.opacity < 1) {
+      this.opacity += 0.05;
+    }
+
+    // Fade out cuando se elimina
+    if (this.targetOpacity !== this.opacity) {
+      const diff = this.targetOpacity - this.opacity;
+      this.opacity += diff * 0.1;
+      if (Math.abs(diff) < 0.01) this.opacity = this.targetOpacity;
+    }
+
+    // Escala
+    if (this.targetRadius !== this.radius) {
+      const diff = this.targetRadius - this.radius;
+      this.radius += diff * 0.1;
+      if (Math.abs(diff) < 0.1) this.radius = this.targetRadius;
+    }
+
+    // Movimiento suave
+    if (this.moving) {
+      const dx = this.targetX - this.x;
+      const dy = this.targetY - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      if (dist > this.speed) {
+        this.x += (dx / dist) * this.speed;
+        this.y += (dy / dist) * this.speed;
+      } else {
+        this.x = this.targetX;
+        this.y = this.targetY;
+        this.moving = false;
+        this.startX = this.x;
+        this.startY = this.y;
+      }
+    } else {
+      // Floating suave
+      this.phase += 0.02;
+      const floatX = Math.sin(this.phase) * 0.5;
+      const floatY = Math.cos(this.phase * 0.7) * 0.3;
+      this.x = this.startX + floatX;
+      this.y = this.startY + floatY;
+    }
+  }
+
+  draw() {
+    if (this.opacity < 0.01) return;
+    
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    
+    switch(this.type) {
+      case 'bacteria':
+        this.drawBacteria();
+        break;
+      case 'phagocyte':
+      case 'neutrophil':
+        this.drawPhagocyte();
+        break;
+      case 'antibody':
+        this.drawAntibody();
+        break;
+      case 'complement':
+      case 'c1q':
+      case 'mbl':
+        this.drawComplement();
+        break;
+      case 'selectin':
+        this.drawSelectin();
+        break;
+      case 'integrin':
+        this.drawIntegrin();
+        break;
+      case 'receptor':
+        this.drawReceptor();
+        break;
+      case 'mac_ring':
+        this.drawMACRing();
+        break;
+      default:
+        this.drawCircle();
+    }
+
+    // Label con fade
+    if (this.label && this.radius > 15) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px "Space Grotesk"';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(this.label, this.x, this.y - this.radius - 15);
+      ctx.shadowBlur = 0;
+    } else if (this.label) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 9px "Space Grotesk"';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(this.label, this.x, this.y - this.radius - 8);
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+  }
+
+  drawBacteria() {
+    const grd = ctx.createRadialGradient(this.x - 5, this.y - 5, 0, this.x, this.y, this.radius);
+    grd.addColorStop(0, '#ff6666');
+    grd.addColorStop(0.7, '#ff4444');
+    grd.addColorStop(1, '#cc0000');
+    
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.ellipse(this.x, this.y, this.radius * 1.4, this.radius * 0.9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.strokeStyle = '#990000';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    
+    ctx.strokeStyle = '#cc0000';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(this.x + this.radius * 1.4, this.y);
+    ctx.quadraticCurveTo(
+      this.x + this.radius * 2, 
+      this.y - 15, 
+      this.x + this.radius * 2.5, 
+      this.y
+    );
+    ctx.stroke();
+  }
+
+  drawPhagocyte() {
+    const grd = ctx.createRadialGradient(this.x - 8, this.y - 8, 0, this.x, this.y, this.radius);
+    grd.addColorStop(0, '#c299dc');
+    grd.addColorStop(0.6, '#9b59b6');
+    grd.addColorStop(1, '#7a4ba3');
+    
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = 'rgba(107, 47, 139, 0.6)';
+    ctx.beginPath();
+    ctx.arc(this.x + this.radius * 0.2, this.y - this.radius * 0.2, this.radius * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.strokeStyle = '#9b59b6';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 7; i++) {
+      const angle = (i / 7) * Math.PI * 2 + this.phase * 0.3;
+      const len = this.radius * (0.4 + Math.sin(this.phase + i) * 0.15);
+      ctx.beginPath();
+      ctx.moveTo(
+        this.x + Math.cos(angle) * this.radius * 0.75,
+        this.y + Math.sin(angle) * this.radius * 0.75
+      );
+      ctx.lineTo(
+        this.x + Math.cos(angle) * (this.radius + len),
+        this.y + Math.sin(angle) * (this.radius + len)
+      );
+      ctx.stroke();
+    }
+  }
+
+  drawAntibody() {
+    ctx.strokeStyle = '#ffff00';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    
+    const armLen = this.radius * 1.2;
+    const armAngle = Math.PI / 6;
+    
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y + this.radius);
+    ctx.lineTo(this.x, this.y);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(
+      this.x - armLen * Math.sin(armAngle),
+      this.y - armLen * Math.cos(armAngle)
+    );
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(
+      this.x + armLen * Math.sin(armAngle),
+      this.y - armLen * Math.cos(armAngle)
+    );
+    ctx.stroke();
+    
+    ctx.fillStyle = '#ffff00';
+    ctx.beginPath();
+    ctx.arc(this.x - armLen * Math.sin(armAngle), this.y - armLen * Math.cos(armAngle), this.radius * 0.4, 0, Math.PI * 2);
+    ctx.arc(this.x + armLen * Math.sin(armAngle), this.y - armLen * Math.cos(armAngle), this.radius * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawComplement() {
+    const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+    grd.addColorStop(0, '#00eeff');
+    grd.addColorStop(0.6, '#00d2ff');
+    grd.addColorStop(1, '#0088aa');
+    
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const x = this.x + Math.cos(angle) * this.radius;
+      const y = this.y + Math.sin(angle) * this.radius;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.strokeStyle = '#0099bb';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  drawSelectin() {
+    const stalkHeight = this.radius * 2;
+    
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y + this.radius);
+    ctx.lineTo(this.x, this.y + this.radius + stalkHeight);
+    ctx.stroke();
+    
+    const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+    grd.addColorStop(0, '#ff8888');
+    grd.addColorStop(1, '#ff4444');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#cc0000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  drawIntegrin() {
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    
+    const legSpacing = this.radius * 0.6;
+    const legHeight = this.radius * 1.8;
+    
+    ctx.beginPath();
+    ctx.moveTo(this.x - legSpacing, this.y + legHeight);
+    ctx.lineTo(this.x - legSpacing, this.y + this.radius);
+    ctx.lineTo(this.x, this.y);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(this.x + legSpacing, this.y + legHeight);
+    ctx.lineTo(this.x + legSpacing, this.y + this.radius);
+    ctx.lineTo(this.x, this.y);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#4ecdc4';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawReceptor() {
+    const extHeight = this.radius * 1.5;
+    
+    ctx.fillStyle = '#e67e22';
+    ctx.fillRect(this.x - this.radius * 0.3, this.y, this.radius * 0.6, this.radius * 2);
+    
+    const grd = ctx.createRadialGradient(this.x, this.y - extHeight, 0, this.x, this.y - extHeight, this.radius);
+    grd.addColorStop(0, '#f39c12');
+    grd.addColorStop(1, '#e67e22');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y - extHeight, this.radius * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.strokeStyle = '#d35400';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  drawMACRing() {
+    ctx.strokeStyle = '#00ff00';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    ctx.strokeStyle = '#00dd00';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius * 0.7, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#00ff00';
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      const x = this.x + Math.cos(angle) * this.radius;
+      const y = this.y + Math.sin(angle) * this.radius;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  drawCircle() {
+    ctx.fillStyle = '#3b82f6';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
+// ============================================================
+//   TISSUE LAYER DRAWING
+// ============================================================
+function drawTissueLayers(type) {
+  if (type === 'migration' || type === 'extravasation') {
+    const bloodY = H * 0.3;
+    const grd1 = ctx.createLinearGradient(0, 0, 0, bloodY);
+    grd1.addColorStop(0, 'rgba(255, 107, 107, 0.05)');
+    grd1.addColorStop(1, 'rgba(255, 107, 107, 0.15)');
+    ctx.fillStyle = grd1;
+    ctx.fillRect(0, 0, W, bloodY);
+    
+    ctx.font = '700 13px "Space Grotesk"';
+    ctx.fillStyle = 'rgba(6, 182, 212, 0.8)';
+    ctx.textAlign = 'left';
+    ctx.fillText('LUZ DEL VASO', 20, 25);
+    
+    const endoY1 = bloodY;
+    const endoY2 = bloodY + 80;
+    const grd2 = ctx.createLinearGradient(0, endoY1, 0, endoY2);
+    grd2.addColorStop(0, 'rgba(255, 182, 193, 0.25)');
+    grd2.addColorStop(0.5, 'rgba(255, 182, 193, 0.35)');
+    grd2.addColorStop(1, 'rgba(255, 182, 193, 0.25)');
+    ctx.fillStyle = grd2;
+    ctx.fillRect(0, endoY1, W, 80);
+    
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, endoY1);
+    ctx.lineTo(W, endoY1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, endoY2);
+    ctx.lineTo(W, endoY2);
+    ctx.stroke();
+    
+    ctx.setLineDash([8, 8]);
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
+    ctx.lineWidth = 2;
+    for (let x = 150; x < W; x += 180) {
+      ctx.beginPath();
+      ctx.moveTo(x, endoY1);
+      ctx.lineTo(x, endoY2);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    
+    ctx.font = '700 13px "Space Grotesk"';
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+    ctx.fillText('ENDOTELIO', 20, endoY1 + 40);
+    
+    const tissueY = endoY2;
+    const grd3 = ctx.createLinearGradient(0, tissueY, 0, H);
+    grd3.addColorStop(0, 'rgba(255, 240, 220, 0.15)');
+    grd3.addColorStop(1, 'rgba(255, 240, 220, 0.25)');
+    ctx.fillStyle = grd3;
+    ctx.fillRect(0, tissueY, W, H - tissueY);
+    
+    ctx.font = '700 13px "Space Grotesk"';
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.8)';
+    ctx.fillText('TEJIDO', 20, tissueY + 30);
+    
+    return { bloodY, endoY1, endoY2, tissueY };
+  }
+  
+  return {};
+}
+
+// ============================================================
+//   SIMULATION DATABASE (SIMPLIFIED FOR DEMO)
+// ============================================================
+const SIMULATIONS = {
+  'migracion': {
+    title: 'Extravasación - Migración Leucocitaria',
+    steps: 4,
+    layerType: 'migration',
+    legend: [
+      { color: '#9b59b6', label: 'Neutrófilo' },
+      { color: '#ff6b6b', label: 'Selectinas' },
+      { color: '#4ecdc4', label: 'Integrinas' },
+      { color: '#e67e22', label: 'ICAM/VCAM' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/4: Rodadura',
+        content: 'El neutrófilo "rueda" sobre el endotelio mediante selectinas. Observa el movimiento fluido del leucocito.'
+      },
+      {
+        title: 'Paso 2/4: Activación',
+        content: 'Las quimiocinas activan las integrinas. Nota cómo las integrinas cambian de opacidad suavemente.'
+      },
+      {
+        title: 'Paso 3/4: Adhesión firme',
+        content: 'El neutrófilo se adhiere firmemente mediante integrinas. Observa la transición suave de posición.'
+      },
+      {
+        title: 'Paso 4/4: Diapédesis',
+        content: 'El neutrófilo atraviesa el endotelio hacia el tejido. Movimiento fluido a través de las capas.'
+      }
+    ],
+    setup: setupMigracion,
+    animate: animateMigracion
+  },
+
+  'fagocitosis': {
+    title: 'Fagocitosis Completa',
+    steps: 5,
+    layerType: 'plain',
+    legend: [
+      { color: '#9b59b6', label: 'Macrófago' },
+      { color: '#ff4444', label: 'Bacteria' },
+      { color: '#00d2ff', label: 'C3b' },
+      { color: '#ff6600', label: 'ROS' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/5: Quimiotaxis',
+        content: 'El macrófago detecta la bacteria a distancia y comienza a moverse hacia ella.'
+      },
+      {
+        title: 'Paso 2/5: Reconocimiento',
+        content: 'Opsoninas (C3b) recubren la bacteria. Observa cómo aparecen gradualmente.'
+      },
+      {
+        title: 'Paso 3/5: Ingestión',
+        content: 'La bacteria se mueve suavemente hacia el macrófago para ser englobada.'
+      },
+      {
+        title: 'Paso 4/5: Maduración',
+        content: 'La bacteria queda dentro del fagocito. Nota el cambio gradual de tamaño.'
+      },
+      {
+        title: 'Paso 5/5: Destrucción',
+        content: 'ROS aparecen y destruyen la bacteria. La bacteria se hace más transparente gradualmente.'
+      }
+    ],
+    setup: setupFagocitosis,
+    animate: animateFagocitosis
+  },
+
+  'via-clasica': {
+    title: 'Vía Clásica del Complemento',
+    steps: 5,
+    layerType: 'plain',
+    legend: [
+      { color: '#ff4444', label: 'Bacteria' },
+      { color: '#ffff00', label: 'Anticuerpos' },
+      { color: '#00d2ff', label: 'Complemento' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/5: Anticuerpos',
+        content: 'Los anticuerpos IgM rodean la bacteria con aparición gradual.'
+      },
+      {
+        title: 'Paso 2/5: C1q',
+        content: 'C1q se mueve hacia los anticuerpos unidos.'
+      },
+      {
+        title: 'Paso 3/5: C3 convertasa',
+        content: 'Aparecen moléculas de C4 y C2 con fade-in suave.'
+      },
+      {
+        title: 'Paso 4/5: Amplificación',
+        content: 'Múltiples C3b aparecen alrededor de la bacteria progresivamente.'
+      },
+      {
+        title: 'Paso 5/5: MAC',
+        content: 'El complejo MAC aparece y crece gradualmente.'
+      }
+    ],
+    setup: setupViaClasica,
+    animate: animateViaClasica
+  },
+
+  'mac': {
+    title: 'Formación del MAC - Complejo de Ataque a Membrana',
+    steps: 6,
+    layerType: 'plain',
+    legend: [
+      { color: '#ff4444', label: 'Bacteria' },
+      { color: '#00d2ff', label: 'C5b, C6, C7, C8' },
+      { color: '#00ff00', label: 'C9 (polimeriza)' },
+      { color: '#00dd00', label: 'Poro MAC' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/6: Inicio con C5b',
+        content: '<strong>C5b</strong> generado por C5 convertasa. Es lábil: debe unirse rápidamente a C6. Se inserta en la bicapa lipídica de la membrana bacteriana.'
+      },
+      {
+        title: 'Paso 2/6: Unión de C6 y C7',
+        content: 'C5b se une a <strong>C6</strong> y <strong>C7</strong>. El complejo <strong>C5b67</strong> es hidrofóbico y se inserta firmemente en la membrana.'
+      },
+      {
+        title: 'Paso 3/6: Incorporación de C8',
+        content: '<strong>C8</strong> se une formando <strong>C5b678</strong>. Forma un poro inicial pequeño (~1 nm diámetro). Insuficiente para causar lisis por sí solo.'
+      },
+      {
+        title: 'Paso 4/6: Primera molécula de C9',
+        content: 'La primera <strong>C9</strong> se une a C8. Sufre cambio conformacional adoptando forma anfipática. Recluta más moléculas de C9.'
+      },
+      {
+        title: 'Paso 5/6: Polimerización de C9 - Anillo',
+        content: '<strong>12-18 moléculas de C9</strong> polimerizan formando estructura tubular. El anillo tiene ~10 nm diámetro. Forma un poro funcional que atraviesa toda la bicapa.'
+      },
+      {
+        title: 'Paso 6/6: Lisis Osmótica',
+        content: 'Flujo iónico masivo: entrada de Na⁺, Ca²⁺ y agua. La bacteria pierde homeostasis osmótica, se hincha y la membrana se rompe. <strong>Muerte por lisis.</strong>'
+      }
+    ],
+    setup: setupMAC,
+    animate: animateMAC
+  },
+
+  'via-lectinas': {
+    title: 'Vía de las Lectinas (MBL)',
+    steps: 4,
+    layerType: 'plain',
+    legend: [
+      { color: '#ff4444', label: 'Bacteria (manosas)' },
+      { color: '#00ff88', label: 'MBL (Lectina)' },
+      { color: '#00dd66', label: 'MASP-1, MASP-2' },
+      { color: '#00d2ff', label: 'C4, C2, C3' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/4: Reconocimiento de PAMPs',
+        content: '<strong>MBL</strong> (Lectina Ligadora de Manosa) reconoce <strong>manosas</strong> en superficie bacteriana. No requiere anticuerpos (inmunidad innata pura).'
+      },
+      {
+        title: 'Paso 2/4: Activación de MASPs',
+        content: '<strong>MASP-1</strong> y <strong>MASP-2</strong> se activan. Análogas a C1r y C1s de la vía clásica.'
+      },
+      {
+        title: 'Paso 3/4: C3 convertasa',
+        content: 'MASP-2 escinde C4 y C2 → <strong>C4b2a</strong>. Converge con vía clásica.'
+      },
+      {
+        title: 'Paso 4/4: Amplificación',
+        content: 'Múltiples <strong>C3b</strong> aparecen. Se forma C5 convertasa → MAC.'
+      }
+    ],
+    setup: setupViaLectinas,
+    animate: animateViaLectinas
+  },
+
+  'via-alternativa': {
+    title: 'Vía Alternativa del Complemento',
+    steps: 4,
+    layerType: 'plain',
+    legend: [
+      { color: '#ff4444', label: 'Bacteria' },
+      { color: '#00d2ff', label: 'C3' },
+      { color: '#ff88ff', label: 'Factor B' },
+      { color: '#88ffff', label: 'Factor D' },
+      { color: '#ff66ff', label: 'Properdina' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/4: Hidrólisis espontánea',
+        content: '<strong>C3</strong> se hidroliza espontáneamente → <strong>C3(H₂O)</strong>. Vía más antigua. No requiere anticuerpos.'
+      },
+      {
+        title: 'Paso 2/4: Factor B y D',
+        content: '<strong>Factor B</strong> se une a C3b. <strong>Factor D</strong> escinde B → Bb. Forma C3bBb.'
+      },
+      {
+        title: 'Paso 3/4: Amplificación',
+        content: '<strong>Properdina</strong> estabiliza C3bBb. Amplificación exponencial (loop positivo).'
+      },
+      {
+        title: 'Paso 4/4: Discriminación',
+        content: 'Células propias tienen reguladores (DAF, MCP). Solo patógenos son lisados.'
+      }
+    ],
+    setup: setupViaAlternativa,
+    animate: animateViaAlternativa
+  },
+
+  'receptores-complemento': {
+    title: 'Receptores del Complemento',
+    steps: 3,
+    layerType: 'plain',
+    legend: [
+      { color: '#9b59b6', label: 'Fagocito' },
+      { color: '#ff4444', label: 'Bacteria' },
+      { color: '#ff6b9d', label: 'CR1, CR3' },
+      { color: '#00d2ff', label: 'C3b' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/3: CR1 (CD35)',
+        content: '<strong>CR1</strong> receptor para <strong>C3b</strong> y <strong>C4b</strong>. Opsonización para fagocitosis.'
+      },
+      {
+        title: 'Paso 2/3: CR3 (Mac-1)',
+        content: '<strong>CR3</strong> integrina β2. Une <strong>iC3b</strong>. Deficiencia: LAD-I.'
+      },
+      {
+        title: 'Paso 3/3: Anafilatoxinas',
+        content: '<strong>C3aR</strong> y <strong>C5aR</strong>. Quimiotaxis y degranulación. C5a es 10-100× más potente.'
+      }
+    ],
+    setup: setupReceptoresComplemento,
+    animate: animateReceptoresComplemento
+  },
+
+  'destruccion': {
+    title: 'Destrucción Microbiana en Fagolisosoma',
+    steps: 4,
+    layerType: 'plain',
+    legend: [
+      { color: '#9b59b6', label: 'Fagolisosoma' },
+      { color: '#ff4444', label: 'Bacteria (degradándose)' },
+      { color: '#ff6600', label: 'ROS (O₂⁻, H₂O₂)' },
+      { color: '#00d2ff', label: 'NO / Enzimas' },
+      { color: '#ffff00', label: 'Defensinas' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/4: ROS - Estallido Respiratorio',
+        content: '<strong>NADPH oxidasa</strong> genera especies reactivas de oxígeno: O₂⁻ → H₂O₂ → •OH. <strong>Mieloperoxidasa:</strong> H₂O₂ + Cl⁻ → HOCl (hipoclorito). Observa las moléculas ROS apareciendo alrededor de la bacteria.'
+      },
+      {
+        title: 'Paso 2/4: RNS - Especies de Nitrógeno',
+        content: '<strong>iNOS</strong> genera óxido nítrico (NO). NO + O₂⁻ → <strong>ONOO⁻</strong> (peroxinitrito, altamente tóxico). La bacteria comienza a degradarse (opacidad reducida).'
+      },
+      {
+        title: 'Paso 3/4: Enzimas Hidrolíticas',
+        content: '<strong>pH ácido</strong> (~4.5) desnaturaliza proteínas. <strong>Lisozima</strong> degrada peptidoglicano. Proteasas (elastasa, catepsina G) rompen proteínas bacterianas. La bacteria sigue desintegrándose.'
+      },
+      {
+        title: 'Paso 4/4: Péptidos Antimicrobianos',
+        content: '<strong>Defensinas</strong> y <strong>catelicidinas</strong> perforan membranas bacterianas. Amplio espectro contra bacterias, hongos y virus. Bacteria completamente degradada en 30-60 minutos.'
+      }
+    ],
+    setup: setupDestruccion,
+    animate: animateDestruccion
+  },
+
+  'rodadura': {
+    title: 'Rodadura - Rolling sobre Endotelio',
+    steps: 3,
+    layerType: 'migration',
+    legend: [
+      { color: '#9b59b6', label: 'Neutrófilo' },
+      { color: '#ff6b6b', label: 'Selectinas (E, P, L)' },
+      { color: '#ffaa00', label: 'Ligandos sLe^x' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/3: Selectinas en acción',
+        content: '<strong>Catch bonds:</strong> enlaces que se fortalecen bajo tensión mecánica del flujo sanguíneo. El neutrófilo forma ~100 enlaces/s y rompe ~100/s. Velocidad: 50-100 μm/s.'
+      },
+      {
+        title: 'Paso 2/3: Patrón de rodadura',
+        content: 'Movimiento irregular "saltando" sobre el endotelio. Nuevas selectinas se unen en el borde anterior, se disocian en el posterior por la tensión. El leucocito "rueda" hacia la derecha.'
+      },
+      {
+        title: 'Paso 3/3: Preparación para adhesión',
+        content: 'La rodadura aumenta tiempo en contacto con endotelio. El leucocito "muestrea" quimiocinas presentadas. Umbral de concentración → activación de integrinas → adhesión firme.'
+      }
+    ],
+    setup: setupRodadura,
+    animate: animateRodadura
+  },
+
+  'adhesion': {
+    title: 'Adhesión Firme - Activación de Integrinas',
+    steps: 3,
+    layerType: 'migration',
+    legend: [
+      { color: '#9b59b6', label: 'Neutrófilo' },
+      { color: '#4ecdc4', label: 'Integrinas (LFA-1, VLA-4)' },
+      { color: '#e67e22', label: 'ICAM-1 / VCAM-1' },
+      { color: '#00d2ff', label: 'Quimiocinas' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/3: Activación inside-out',
+        content: 'Estado basal: integrinas "dobladas" (baja afinidad). <strong>Quimiocinas</strong> activan señales intracelulares. Talina y kindlina unen integrinas. Conformación extendida: afinidad ↑1000×.'
+      },
+      {
+        title: 'Paso 2/3: Unión a ligandos',
+        content: '<strong>LFA-1 → ICAM-1</strong> (par más importante). <strong>VLA-4 → VCAM-1</strong>. Clustering: integrinas se agrupan. Spreading: leucocito se aplana sobre endotelio.'
+      },
+      {
+        title: 'Paso 3/3: Migración lateral',
+        content: 'El leucocito "gatea" buscando uniones intercelulares. PECAM-1, ICAM-2, JAM-A marcan las uniones. Polarización del citoesqueleto (frente y cola).'
+      }
+    ],
+    setup: setupAdhesion,
+    animate: animateAdhesion
+  },
+
+  'diapedesis': {
+    title: 'Diapédesis - Transmigración Endotelial',
+    steps: 4,
+    layerType: 'migration',
+    legend: [
+      { color: '#9b59b6', label: 'Neutrófilo' },
+      { color: '#8b5cf6', label: 'PECAM-1 (CD31)' },
+      { color: '#e67e22', label: 'JAM-A, CD99' },
+      { color: '#10b981', label: 'MMP-9' }
+    ],
+    descriptions: [
+      {
+        title: 'Paso 1/4: Localización de uniones',
+        content: 'Búsqueda: leucocito migra lateralmente. <strong>PECAM-1</strong> concentrado en uniones célula-célula. Interacción homofílica: PECAM-1 leucocito ↔ PECAM-1 endotelio.'
+      },
+      {
+        title: 'Paso 2/4: Atravesando monocapa',
+        content: 'Pseudópodo entre células endoteliales. <strong>JAM-A, CD99</strong> facilitan paso. VE-cadherina se afloja temporalmente. Paso completo: 2-5 minutos.'
+      },
+      {
+        title: 'Paso 3/4: Membrana basal',
+        content: 'Barrera: colágeno IV + laminina. <strong>MMP-9</strong> degrada localmente. Poros preexistentes. Reparación: ~1 hora después.'
+      },
+      {
+        title: 'Paso 4/4: Llegada al tejido',
+        content: 'Liberación en espacio perivascular. Quimiotaxis continúa hacia foco inflamatorio. Activación completa para fagocitosis. Tiempo total: 5-15 minutos.'
+      }
+    ],
+    setup: setupDiapedesis,
+    animate: animateDiapedesis
+  }
+};
+
+// ============================================================
+//   SETUP FUNCTIONS
+// ============================================================
+
+function setupMigracion(step) {
+  const layers = drawTissueLayers('migration');
+  const { bloodY, endoY1, endoY2, tissueY } = layers;
+  
+  // Definir posiciones objetivo para cada paso
+  const positions = [
+    { x: W * 0.15, y: bloodY - 40 },
+    { x: W * 0.35, y: bloodY - 30 },
+    { x: W * 0.55, y: endoY1 + 40 },
+    { x: W * 0.7, y: tissueY + 50 }
+  ];
+  
+  const targetPos = positions[step - 1];
+  
+  // Buscar neutrófilo existente o crear uno nuevo
+  let neutrophil = entities.find(e => e.type === 'neutrophil');
+  if (!neutrophil) {
+    neutrophil = new Particle(targetPos.x, targetPos.y, 'neutrophil', 'NEUTRÓFILO', true);
+    entities.push(neutrophil);
+  } else {
+    neutrophil.moveTo(targetPos.x, targetPos.y, 1.5);
+  }
+  
+  // Selectinas (siempre presentes)
+  if (!entities.find(e => e.label === 'E-Sel')) {
+    for (let i = 0; i < 7; i++) {
+      const x = 100 + i * 150;
+      const sel = new Particle(x, endoY1 - 15, 'selectin', i % 2 === 0 ? 'E-Sel' : 'P-Sel', true);
+      entities.push(sel);
+    }
+  }
+  
+  // Integrinas
+  if (!entities.find(e => e.label === 'LFA-1')) {
+    const integrina1 = new Particle(targetPos.x + 20, targetPos.y + 30, 'integrin', 'LFA-1', true);
+    integrina1.opacity = step < 2 ? 0.4 : 1;
+    integrina1.targetOpacity = step < 2 ? 0.4 : 1;
+    entities.push(integrina1);
+  } else {
+    const integrina1 = entities.find(e => e.label === 'LFA-1');
+    integrina1.fadeTo(step < 2 ? 0.4 : 1);
+    integrina1.moveTo(targetPos.x + 20, targetPos.y + 30, 1.5);
+  }
+  
+  // ICAM en endotelio
+  if (!entities.find(e => e.label === 'ICAM-1')) {
+    for (let i = 0; i < 5; i++) {
+      const x = 150 + i * 200;
+      const icam = new Particle(x, endoY1 + 5, 'receptor', 'ICAM-1', true);
+      entities.push(icam);
+    }
+  }
+}
+
+function animateMigracion(step) {
+  // La animación se maneja automáticamente por las transiciones
+}
+
+function setupFagocitosis(step) {
+  const phagX = W * 0.25;
+  const phagY = H * 0.5;
+  
+  // Posiciones de bacteria según paso
+  const bacPositions = [
+    { x: W * 0.75, y: H * 0.5 },
+    { x: W * 0.75, y: H * 0.5 },
+    { x: phagX + 60, y: phagY },
+    { x: phagX, y: phagY },
+    { x: phagX, y: phagY }
+  ];
+  
+  const bacPos = bacPositions[step - 1];
+  
+  // Macrófago
+  let phagocyte = entities.find(e => e.type === 'phagocyte');
+  if (!phagocyte) {
+    phagocyte = new Particle(phagX, phagY, 'phagocyte', 'MACRÓFAGO', true);
+    entities.push(phagocyte);
+  }
+  
+  // Bacteria
+  let bacteria = entities.find(e => e.type === 'bacteria');
+  if (!bacteria) {
+    bacteria = new Particle(bacPos.x, bacPos.y, 'bacteria', 'BACTERIA', true);
+    entities.push(bacteria);
+  } else {
+    bacteria.moveTo(bacPos.x, bacPos.y, 1.5);
+    if (step >= 4) bacteria.scaleTo(20);
+    if (step >= 5) bacteria.fadeTo(0.4);
+  }
+  
+  // Opsoninas (step 2+)
+  if (step >= 2 && !entities.find(e => e.label === 'C3b')) {
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const x = bacPos.x + Math.cos(angle) * 40;
+      const y = bacPos.y + Math.sin(angle) * 40;
+      const c3b = new Particle(x, y, 'complement', 'C3b', true);
+      entities.push(c3b);
+    }
+  }
+  
+  // ROS (step 5)
+  if (step >= 5 && !entities.find(e => e.label === '')) {
+    for (let i = 0; i < 10; i++) {
+      const angle = (i / 10) * Math.PI * 2;
+      const dist = 25 + Math.random() * 15;
+      const x = phagX + Math.cos(angle) * dist;
+      const y = phagY + Math.sin(angle) * dist;
+      const ros = new Particle(x, y, 'complement', '', true);
+      ros.radius = 4;
+      entities.push(ros);
+    }
+  }
+}
+
+function animateFagocitosis(step) {
+  // Las animaciones se manejan automáticamente por las transiciones
+}
+
+function setupDestruccion(step) {
+  const phagX = W * 0.5;
+  const phagY = H * 0.5;
+  
+  // Fagolisosoma (siempre presente)
+  let phagocyte = entities.find(e => e.label === 'FAGOLISOSOMA');
+  if (!phagocyte) {
+    phagocyte = new Particle(phagX, phagY, 'phagocyte', 'FAGOLISOSOMA', true);
+    phagocyte.radius = 55;
+    phagocyte.targetRadius = 55;
+    entities.push(phagocyte);
+  }
+  
+  // Bacteria (siempre presente, pero se degrada)
+  let bacteria = entities.find(e => e.label === 'BACTERIA');
+  if (!bacteria) {
+    bacteria = new Particle(phagX, phagY, 'bacteria', 'BACTERIA', true);
+    bacteria.radius = 22;
+    entities.push(bacteria);
+  }
+  
+  // Degradar bacteria progresivamente
+  if (step >= 2) bacteria.fadeTo(0.8);
+  if (step >= 3) bacteria.fadeTo(0.5);
+  if (step >= 4) bacteria.fadeTo(0.2);
+  
+  // ROS - Especies Reactivas de Oxígeno (step 1+)
+  if (step >= 1) {
+    const existingROS = entities.filter(e => e.label === 'ROS');
+    if (existingROS.length === 0) {
+      for (let i = 0; i < 10; i++) {
+        const angle = (i / 10) * Math.PI * 2;
+        const dist = 25 + Math.random() * 12;
+        const x = phagX + Math.cos(angle) * dist;
+        const y = phagY + Math.sin(angle) * dist;
+        const ros = new Particle(x, y, 'complement', 'ROS', true);
+        ros.radius = 5;
+        
+        // Color naranja para ROS
+        setTimeout(() => {
+          entities.push(ros);
+        }, i * 100);
+      }
+    }
+  }
+  
+  // RNS - Especies Reactivas de Nitrógeno (step 2+)
+  if (step >= 2) {
+    const existingRNS = entities.filter(e => e.label === 'NO');
+    if (existingRNS.length === 0) {
+      for (let i = 0; i < 6; i++) {
+        const angle = ((i + 0.5) / 10) * Math.PI * 2;
+        const dist = 30 + Math.random() * 10;
+        const x = phagX + Math.cos(angle) * dist;
+        const y = phagY + Math.sin(angle) * dist;
+        const rns = new Particle(x, y, 'complement', 'NO', true);
+        rns.radius = 5;
+        
+        setTimeout(() => {
+          entities.push(rns);
+        }, 600 + i * 100);
+      }
+    }
+  }
+  
+  // Enzimas (step 3+)
+  if (step >= 3) {
+    const existingEnz = entities.filter(e => e.label === 'Enzima');
+    if (existingEnz.length === 0) {
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const dist = 20;
+        const x = phagX + Math.cos(angle) * dist;
+        const y = phagY + Math.sin(angle) * dist;
+        const enz = new Particle(x, y, 'complement', 'Enzima', true);
+        enz.radius = 4;
+        
+        setTimeout(() => {
+          entities.push(enz);
+        }, i * 80);
+      }
+    }
+  }
+  
+  // Péptidos antimicrobianos (step 4+)
+  if (step >= 4) {
+    const existingPep = entities.filter(e => e.label === 'Defensina');
+    if (existingPep.length === 0) {
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const dist = 35;
+        const x = phagX + Math.cos(angle) * dist;
+        const y = phagY + Math.sin(angle) * dist;
+        const pep = new Particle(x, y, 'antibody', 'Defensina', true);
+        pep.radius = 5;
+        
+        setTimeout(() => {
+          entities.push(pep);
+        }, i * 120);
+      }
+    }
+  }
+}
+
+function animateDestruccion(step) {
+  // Las animaciones se manejan por las transiciones automáticas
+  // La bacteria se degrada progresivamente con cambios de opacidad
+}
+
+function setupViaClasica(step) {
+  const bacX = W * 0.5;
+  const bacY = H * 0.5;
+  
+  // Bacteria
+  let bacteria = entities.find(e => e.type === 'bacteria');
+  if (!bacteria) {
+    bacteria = new Particle(bacX, bacY, 'bacteria', 'BACTERIA', true);
+    entities.push(bacteria);
+  }
+  
+  // Antibodies (step 1+)
+  if (step >= 1 && !entities.find(e => e.type === 'antibody')) {
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const x = bacX + Math.cos(angle) * 70;
+      const y = bacY + Math.sin(angle) * 70;
+      const ab = new Particle(x, y, 'antibody', 'IgM', true);
+      entities.push(ab);
+    }
+  }
+  
+  // C1q (step 2+)
+  if (step >= 2) {
+    let c1q = entities.find(e => e.label === 'C1q');
+    if (!c1q) {
+      c1q = new Particle(bacX - 100, bacY - 80, 'c1q', 'C1q', true);
+      entities.push(c1q);
+    }
+    c1q.moveTo(bacX - 50, bacY - 50, 1);
+  }
+  
+  // C3b masivo (step 4+)
+  if (step >= 4 && entities.filter(e => e.label === 'C3b').length === 0) {
+    for (let i = 0; i < 15; i++) {
+      const angle = (i / 15) * Math.PI * 2;
+      const dist = 90 + (i % 3) * 15;
+      const x = bacX + Math.cos(angle) * dist;
+      const y = bacY + Math.sin(angle) * dist;
+      const c3b = new Particle(x, y, 'complement', 'C3b', true);
+      setTimeout(() => entities.push(c3b), i * 50);
+    }
+  }
+}
+
+function animateViaClasica(step) {
+  // Manejado por transiciones
+}
+
+function setupMAC(step) {
+  const bacX = W * 0.5;
+  const bacY = H * 0.5;
+  
+  // Bacteria (siempre presente) - buscar por tipo Y label
+  let bacteria = entities.find(e => e.type === 'bacteria' || e.label === 'BACTERIA');
+  if (!bacteria) {
+    bacteria = new Particle(bacX, bacY, 'bacteria', '', true);
+    bacteria.radius = 60;
+    bacteria.targetRadius = 60;
+    entities.push(bacteria);
+  }
+  
+  // Fade out bacteria en paso 6
+  if (step >= 6) {
+    bacteria.fadeTo(0.6);
+  }
+  
+  const macX = bacX + 90;
+  const macY = bacY - 40;
+  
+  // C5b (step 1+)
+  if (step >= 1 && !entities.find(e => e.label === 'C5b')) {
+    const c5b = new Particle(bacX + 140, bacY - 110, 'complement', 'C5b', true);
+    c5b.radius = 12;
+    entities.push(c5b);
+    setTimeout(() => c5b.moveTo(macX, macY, 1), 300);
+  }
+  
+  // C6 (step 2+)
+  if (step >= 2 && !entities.find(e => e.label === 'C6')) {
+    const c6 = new Particle(bacX + 160, bacY - 130, 'complement', 'C6', true);
+    c6.radius = 11;
+    entities.push(c6);
+    setTimeout(() => c6.moveTo(macX + 5, macY - 5, 1), 300);
+  }
+  
+  // C7 (step 2+)
+  if (step >= 2 && !entities.find(e => e.label === 'C7')) {
+    const c7 = new Particle(bacX + 180, bacY - 120, 'complement', 'C7', true);
+    c7.radius = 11;
+    entities.push(c7);
+    setTimeout(() => c7.moveTo(macX - 5, macY - 5, 1), 500);
+  }
+  
+  // C8 (step 3+)
+  if (step >= 3 && !entities.find(e => e.label === 'C8')) {
+    const c8 = new Particle(bacX + 170, bacY - 100, 'complement', 'C8', true);
+    c8.radius = 11;
+    entities.push(c8);
+    setTimeout(() => c8.moveTo(macX, macY + 5, 1), 300);
+  }
+  
+  // Primera C9 (step 4+)
+  if (step >= 4 && !entities.find(e => e.label === 'C9-1')) {
+    const c9_first = new Particle(bacX + 150, bacY - 90, 'complement', 'C9-1', true);
+    c9_first.radius = 9;
+    entities.push(c9_first);
+    setTimeout(() => c9_first.moveTo(macX + 10, macY, 1), 300);
+  }
+  
+  // Múltiples C9 formando anillo (step 5+)
+  if (step >= 5) {
+    const existingC9s = entities.filter(e => e.label && e.label.startsWith('C9-ring'));
+    if (existingC9s.length === 0) {
+      const ringRadius = 22;
+      
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        const targetX = macX + Math.cos(angle) * ringRadius;
+        const targetY = macY + Math.sin(angle) * ringRadius;
+        
+        const c9 = new Particle(macX, macY, 'complement', `C9-ring-${i}`, true);
+        c9.radius = 6;
+        entities.push(c9);
+        
+        // Mover cada C9 a su posición en el anillo
+        setTimeout(() => {
+          c9.moveTo(targetX, targetY, 0.8);
+        }, i * 100);
+      }
+    }
+  }
+  
+  // MAC completo (step 6+)
+  if (step >= 6 && !entities.find(e => e.type === 'mac_ring')) {
+    const mac = new Particle(macX, macY, 'mac_ring', 'MAC', true);
+    mac.radius = 28;
+    mac.targetRadius = 28;
+    entities.push(mac);
+  }
+}
+
+function animateMAC(step) {
+  // Manejado por transiciones
+}
+
+function setupRodadura(step) {
+  const layers = drawTissueLayers('migration');
+  const { bloodY, endoY1 } = layers;
+  
+  // Neutrófilo se mueve horizontalmente en cada paso
+  let neutX = W * 0.2 + (step - 1) * 150;
+  const neutY = bloodY - 35;
+  
+  let neutrophil = entities.find(e => e.type === 'neutrophil');
+  if (!neutrophil) {
+    neutrophil = new Particle(neutX, neutY, 'neutrophil', 'NEUTRÓFILO', true);
+    neutrophil.radius = 22;
+    entities.push(neutrophil);
+  } else {
+    neutrophil.moveTo(neutX, neutY, 0.5);
+  }
+  
+  // L-Selectina en neutrófilo
+  let lsel = entities.find(e => e.label === 'L-Sel');
+  if (!lsel) {
+    lsel = new Particle(neutX, neutY + 25, 'selectin', 'L-Sel', true);
+    lsel.radius = 8;
+    entities.push(lsel);
+  } else {
+    lsel.moveTo(neutX, neutY + 25, 0.5);
+  }
+  
+  // Selectinas en endotelio (siempre presentes)
+  if (!entities.find(e => e.label === 'E-Sel')) {
+    for (let i = 0; i < 8; i++) {
+      const x = 80 + i * 130;
+      const sel = new Particle(x, endoY1 - 12, 'selectin', i % 2 === 0 ? 'E-Sel' : 'P-Sel', true);
+      entities.push(sel);
+    }
+  }
+}
+
+function animateRodadura(step) {
+  // Animación manejada por moveTo en setup
+}
+
+function setupAdhesion(step) {
+  const layers = drawTissueLayers('migration');
+  const { bloodY, endoY1 } = layers;
+  
+  const neutX = W * 0.5;
+  const neutY = step < 3 ? bloodY - 30 : endoY1 + 20;
+  
+  let neutrophil = entities.find(e => e.type === 'neutrophil');
+  if (!neutrophil) {
+    neutrophil = new Particle(neutX, neutY, 'neutrophil', 'NEUTRÓFILO', true);
+    entities.push(neutrophil);
+  } else {
+    if (step === 3) {
+      neutrophil.moveTo(neutX, endoY1 + 20, 1);
+    }
+  }
+  
+  // Integrinas (cambian opacidad)
+  let lfa1 = entities.find(e => e.label === 'LFA-1');
+  if (!lfa1) {
+    lfa1 = new Particle(neutX - 20, neutY + 30, 'integrin', 'LFA-1', true);
+    lfa1.opacity = step >= 2 ? 1 : 0.4;
+    lfa1.targetOpacity = step >= 2 ? 1 : 0.4;
+    entities.push(lfa1);
+  } else {
+    lfa1.fadeTo(step >= 2 ? 1 : 0.4);
+    lfa1.moveTo(neutX - 20, neutY + 30, 1);
+  }
+  
+  let vla4 = entities.find(e => e.label === 'VLA-4');
+  if (!vla4) {
+    vla4 = new Particle(neutX + 20, neutY + 30, 'integrin', 'VLA-4', true);
+    vla4.opacity = step >= 2 ? 1 : 0.4;
+    vla4.targetOpacity = step >= 2 ? 1 : 0.4;
+    entities.push(vla4);
+  } else {
+    vla4.fadeTo(step >= 2 ? 1 : 0.4);
+    vla4.moveTo(neutX + 20, neutY + 30, 1);
+  }
+  
+  // ICAM/VCAM en endotelio
+  if (!entities.find(e => e.label === 'ICAM-1')) {
+    for (let i = 0; i < 5; i++) {
+      const x = 150 + i * 200;
+      const icam = new Particle(x, endoY1 + 5, 'receptor', i % 2 === 0 ? 'ICAM-1' : 'VCAM-1', true);
+      entities.push(icam);
+    }
+  }
+  
+  // Quimiocinas (paso 1+)
+  if (step >= 1 && !entities.find(e => e.label === 'IL-8')) {
+    for (let i = 0; i < 4; i++) {
+      const x = 200 + i * 180;
+      const quim = new Particle(x, endoY1 - 5, 'complement', 'IL-8', true);
+      quim.radius = 4;
+      entities.push(quim);
+    }
+  }
+}
+
+function animateAdhesion(step) {
+  // Animación manejada por transiciones
+}
+
+function setupDiapedesis(step) {
+  const layers = drawTissueLayers('migration');
+  const { endoY1, endoY2, tissueY } = layers;
+  
+  const neutX = W * 0.4;
+  let neutY = endoY1 + 30;
+  
+  if (step === 2) neutY = (endoY1 + endoY2) / 2;
+  if (step === 3) neutY = endoY2 - 10;
+  if (step === 4) neutY = tissueY + 40;
+  
+  let neutrophil = entities.find(e => e.type === 'neutrophil');
+  if (!neutrophil) {
+    neutrophil = new Particle(neutX, neutY, 'neutrophil', 'NEUTRÓFILO', true);
+    entities.push(neutrophil);
+  } else {
+    neutrophil.moveTo(neutX, neutY, 0.8);
+  }
+  
+  // PECAM-1 en uniones (siempre presente)
+  if (!entities.find(e => e.label === 'PECAM-1')) {
+    for (let x = 150; x < W; x += 180) {
+      const pecam = new Particle(x, endoY1 + 40, 'receptor', 'PECAM-1', true);
+      pecam.radius = 8;
+      pecam.opacity = step >= 1 ? 1 : 0.5;
+      pecam.targetOpacity = step >= 1 ? 1 : 0.5;
+      entities.push(pecam);
+    }
+  } else {
+    entities.filter(e => e.label === 'PECAM-1').forEach(p => {
+      p.fadeTo(step >= 4 ? 1 : 0.7);
+    });
+  }
+  
+  // JAM-A (paso 2+)
+  if (step >= 2 && !entities.find(e => e.label === 'JAM-A')) {
+    const jam = new Particle(neutX + 30, endoY1 + 40, 'receptor', 'JAM-A', true);
+    jam.radius = 7;
+    entities.push(jam);
+  }
+}
+
+function animateDiapedesis(step) {
+  // Animación manejada por transiciones
+}
+
+function setupViaLectinas(step) {
+  const bacX = W * 0.5;
+  const bacY = H * 0.5;
+  
+  // Bacteria (siempre)
+  let bacteria = entities.find(e => e.type === 'bacteria');
+  if (!bacteria) {
+    bacteria = new Particle(bacX, bacY, 'bacteria', 'BACTERIA', true);
+    entities.push(bacteria);
+  }
+  
+  // Manosas en superficie (siempre)
+  if (!entities.find(e => e.label === 'Man')) {
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const x = bacX + Math.cos(angle) * 45;
+      const y = bacY + Math.sin(angle) * 45;
+      const man = new Particle(x, y, 'complement', 'Man', true);
+      man.radius = 5;
+      entities.push(man);
+    }
+  }
+  
+  // MBL (paso 1+)
+  if (step >= 1) {
+    let mbl = entities.find(e => e.label === 'MBL');
+    if (!mbl) {
+      mbl = new Particle(bacX - 120, bacY - 90, 'mbl', 'MBL', true);
+      mbl.radius = 15;
+      entities.push(mbl);
+      setTimeout(() => mbl.moveTo(bacX - 60, bacY - 50, 1), 500);
+    }
+  }
+  
+  // MASPs (paso 2+)
+  if (step >= 2) {
+    if (!entities.find(e => e.label === 'MASP-1')) {
+      const masp1 = new Particle(bacX - 90, bacY - 110, 'complement', 'MASP-1', true);
+      entities.push(masp1);
+      const masp2 = new Particle(bacX - 110, bacY - 100, 'complement', 'MASP-2', true);
+      entities.push(masp2);
+    }
+  }
+  
+  // C4, C2 (paso 3+)
+  if (step >= 3) {
+    const existing = entities.filter(e => e.label === 'C4' || e.label === 'C2');
+    if (existing.length === 0) {
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const dist = 90 + Math.random() * 30;
+        const x = bacX + Math.cos(angle) * dist;
+        const y = bacY + Math.sin(angle) * dist;
+        const comp = new Particle(x, y, 'complement', i % 2 === 0 ? 'C4' : 'C2', true);
+        setTimeout(() => entities.push(comp), i * 100);
+      }
+    }
+  }
+  
+  // C3b masivo (paso 4+)
+  if (step >= 4) {
+    const existingC3b = entities.filter(e => e.label === 'C3b');
+    if (existingC3b.length === 0) {
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        const dist = 80 + (i % 3) * 12;
+        const x = bacX + Math.cos(angle) * dist;
+        const y = bacY + Math.sin(angle) * dist;
+        const c3b = new Particle(x, y, 'complement', 'C3b', true);
+        setTimeout(() => entities.push(c3b), i * 80);
+      }
+    }
+  }
+}
+
+function animateViaLectinas(step) {
+  // Animaciones manejadas por transiciones
+}
+
+function setupViaAlternativa(step) {
+  const bacX = W * 0.5;
+  const bacY = H * 0.5;
+  
+  // Bacteria
+  let bacteria = entities.find(e => e.type === 'bacteria');
+  if (!bacteria) {
+    bacteria = new Particle(bacX, bacY, 'bacteria', 'BACTERIA', true);
+    entities.push(bacteria);
+  }
+  
+  // C3 en plasma (paso 1+)
+  if (step >= 1) {
+    const existingC3 = entities.filter(e => e.label === 'C3');
+    if (existingC3.length === 0) {
+      for (let i = 0; i < 8; i++) {
+        const x = 100 + Math.random() * (W - 200);
+        const y = 100 + Math.random() * (H - 200);
+        const c3 = new Particle(x, y, 'complement', 'C3', true);
+        setTimeout(() => entities.push(c3), i * 120);
+      }
+    }
+  }
+  
+  // Factor B y D (paso 2+)
+  if (step >= 2) {
+    if (!entities.find(e => e.label === 'Factor B')) {
+      const factorB = new Particle(bacX + 100, bacY - 90, 'complement', 'Factor B', true);
+      factorB.radius = 10;
+      entities.push(factorB);
+      setTimeout(() => factorB.moveTo(bacX + 60, bacY - 60, 1), 500);
+      
+      const factorD = new Particle(bacX - 100, bacY - 90, 'complement', 'Factor D', true);
+      factorD.radius = 10;
+      entities.push(factorD);
+    }
+  }
+  
+  // C3b + Properdina (paso 3+)
+  if (step >= 3) {
+    const existingC3b = entities.filter(e => e.label === 'C3b');
+    if (existingC3b.length < 5) {
+      for (let i = 0; i < 10; i++) {
+        const angle = (i / 10) * Math.PI * 2;
+        const x = bacX + Math.cos(angle) * 70;
+        const y = bacY + Math.sin(angle) * 70;
+        const c3b = new Particle(x, y, 'complement', 'C3b', true);
+        setTimeout(() => entities.push(c3b), i * 80);
+      }
+    }
+    
+    if (!entities.find(e => e.label === 'Properdina')) {
+      const prop = new Particle(bacX, bacY - 110, 'complement', 'Properdina', true);
+      prop.radius = 12;
+      entities.push(prop);
+    }
+  }
+  
+  // Más C3b (paso 4+)
+  if (step >= 4) {
+    const existingC3b = entities.filter(e => e.label === 'C3b');
+    if (existingC3b.length < 20) {
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const dist = 85 + (i % 3) * 15;
+        const x = bacX + Math.cos(angle) * dist;
+        const y = bacY + Math.sin(angle) * dist;
+        const c3b = new Particle(x, y, 'complement', 'C3b', true);
+        setTimeout(() => entities.push(c3b), i * 100);
+      }
+    }
+  }
+}
+
+function animateViaAlternativa(step) {
+  // Animaciones manejadas por transiciones
+}
+
+function setupReceptoresComplemento(step) {
+  const phagX = W * 0.3;
+  const phagY = H * 0.5;
+  const bacX = W * 0.7;
+  const bacY = H * 0.5;
+  
+  // Fagocito
+  let phagocyte = entities.find(e => e.label === 'FAGOCITO');
+  if (!phagocyte) {
+    phagocyte = new Particle(phagX, phagY, 'phagocyte', 'FAGOCITO', true);
+    entities.push(phagocyte);
+  }
+  
+  // Bacteria
+  let bacteria = entities.find(e => e.type === 'bacteria');
+  if (!bacteria) {
+    bacteria = new Particle(bacX, bacY, 'bacteria', 'BACTERIA', true);
+    entities.push(bacteria);
+  }
+  
+  // C3b en bacteria (siempre)
+  if (!entities.find(e => e.label === 'C3b')) {
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const x = bacX + Math.cos(angle) * 45;
+      const y = bacY + Math.sin(angle) * 45;
+      const c3b = new Particle(x, y, 'complement', 'C3b', true);
+      entities.push(c3b);
+    }
+  }
+  
+  // CR1 (paso 1+)
+  if (step >= 1) {
+    if (!entities.find(e => e.label === 'CR1')) {
+      const cr1 = new Particle(phagX + 45, phagY - 20, 'receptor', 'CR1', true);
+      cr1.radius = 10;
+      entities.push(cr1);
+    }
+  }
+  
+  // CR3 (paso 2+)
+  if (step >= 2) {
+    if (!entities.find(e => e.label === 'CR3')) {
+      const cr3 = new Particle(phagX + 45, phagY + 20, 'receptor', 'CR3', true);
+      cr3.radius = 10;
+      entities.push(cr3);
+    }
+  }
+  
+  // C3aR, C5aR y anafilatoxinas (paso 3+)
+  if (step >= 3) {
+    if (!entities.find(e => e.label === 'C3aR')) {
+      const c3ar = new Particle(phagX - 45, phagY - 25, 'receptor', 'C3aR', true);
+      c3ar.radius = 9;
+      entities.push(c3ar);
+      
+      const c5ar = new Particle(phagX - 45, phagY + 25, 'receptor', 'C5aR', true);
+      c5ar.radius = 9;
+      entities.push(c5ar);
+      
+      // Anafilatoxinas flotando
+      for (let i = 0; i < 5; i++) {
+        const x = phagX - 80 + Math.random() * 40;
+        const y = phagY - 60 + Math.random() * 120;
+        const anafilo = new Particle(x, y, 'complement', i % 2 === 0 ? 'C3a' : 'C5a', true);
+        anafilo.radius = 5;
+        setTimeout(() => entities.push(anafilo), i * 100);
+      }
+    }
+  }
+}
+
+function animateReceptoresComplemento(step) {
+  // Animaciones manejadas por transiciones
+}
+
+// ============================================================
+//   UI CONTROLS
+// ============================================================
+
+function loadSim(simId) {
+  document.querySelectorAll('.sim-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  currentSim = SIMULATIONS[simId];
+  if (!currentSim) return;
+  
+  currentStep = 1;
+  totalSteps = currentSim.steps;
+  isPlaying = false;
+  if (playInterval) clearInterval(playInterval);
+  
+  // Limpiar entidades antiguas con fade out
+  entities.forEach(e => e.remove());
+  setTimeout(() => {
+    entities = [];
+  }, 500);
+  
+  document.getElementById('sim-title').textContent = currentSim.title;
+  document.getElementById('current-step').textContent = currentStep;
+  document.getElementById('total-steps').textContent = totalSteps;
+  document.getElementById('btn-play').textContent = '▶️ Auto';
+  
+  const legendHTML = currentSim.legend.map(item => 
+    `<div class="legend-item">
+      <div class="legend-dot" style="background:${item.color}"></div>${item.label}
+    </div>`
+  ).join('');
+  document.getElementById('legend-container').innerHTML = legendHTML;
+  
+  setTimeout(() => updateStep(), 500);
+}
+
+function updateStep() {
+  if (!currentSim) return;
+  
+  const desc = currentSim.descriptions[currentStep - 1];
+  document.getElementById('desc-title').textContent = desc.title;
+  document.getElementById('desc-content').innerHTML = desc.content;
+  document.getElementById('current-step').textContent = currentStep;
+  
+  const progress = (currentStep / totalSteps) * 100;
+  document.getElementById('progress-fill').style.width = progress + '%';
+  
+  currentSim.setup(currentStep);
+  if (currentSim.animate) {
+    currentSim.animate(currentStep);
+  }
+}
+
+function nextStep() {
+  if (!currentSim || currentStep >= totalSteps) return;
+  currentStep++;
+  updateStep();
+}
+
+function prevStep() {
+  if (!currentSim || currentStep <= 1) return;
+  currentStep--;
+  updateStep();
+}
+
+function resetSim() {
+  if (!currentSim) return;
+  currentStep = 1;
+  isPlaying = false;
+  if (playInterval) clearInterval(playInterval);
+  document.getElementById('btn-play').textContent = '▶️ Auto';
+  
+  // Fade out todas las entidades
+  entities.forEach(e => e.remove());
+  setTimeout(() => {
+    entities = [];
+    updateStep();
+  }, 500);
+}
+
+function togglePlay() {
+  if (!currentSim) return;
+  
+  isPlaying = !isPlaying;
+  
+  if (isPlaying) {
+    document.getElementById('btn-play').textContent = '⏸️ Pausar';
+    playInterval = setInterval(() => {
+      if (currentStep < totalSteps) {
+        nextStep();
+      } else {
+        isPlaying = false;
+        clearInterval(playInterval);
+        document.getElementById('btn-play').textContent = '▶️ Auto';
+      }
+    }, 3500);
+  } else {
+    clearInterval(playInterval);
+    document.getElementById('btn-play').textContent = '▶️ Auto';
+  }
+}
+
+// ============================================================
+//   DRAWING & ANIMATION LOOP
+// ============================================================
+
+function drawBackground() {
+  const grd = ctx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, '#0a0e1a');
+  grd.addColorStop(1, '#16213e');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function draw() {
+  drawBackground();
+  
+  if (currentSim) {
+    if (currentSim.layerType === 'migration') {
+      drawTissueLayers('migration');
+    }
+  }
+  
+  // Actualizar y dibujar entidades
+  entities.forEach(e => {
+    e.update();
+    e.draw();
+  });
+  
+  // Eliminar entidades que completaron fade-out
+  entities = entities.filter(e => {
+    if (e.shouldRemove && e.opacity < 0.05) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function loop() {
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ============================================================
+//   INIT
+// ============================================================
+window.addEventListener('load', () => {
+  resizeCanvas();
+  loop();
+  
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = '18px "Space Grotesk"';
+  ctx.textAlign = 'center';
+  ctx.fillText('Selecciona un proceso del menú lateral', W/2, H/2 - 20);
+  ctx.font = '14px "Space Grotesk"';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('Ahora con transiciones fluidas entre pasos', W/2, H/2 + 10);
+});
+
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  if (currentSim) updateStep();
+});
+</script>
+</body>
+</html>
